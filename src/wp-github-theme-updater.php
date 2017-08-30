@@ -91,9 +91,21 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		if ( false === strpos( $source, $this->theme_name ) ) {
 			return $source;
 		}
-		$path_parts = pathinfo( $source );
-		$newsource  = trailingslashit( $path_parts['dirname'] ) . trailingslashit( $this->theme_name );
-		rename( $source, $newsource );
+
+		$source      = untrailingslashit( $source );
+		$newsource   = trailingslashit( get_theme_root( $this->theme_name ) ) . untrailingslashit( $this->theme_name );
+		$slash_count = substr_count( $this->theme_name, '/' );
+		if ( $slash_count ) {
+			for ( $i = $slash_count; 0 < $i; $i -- ) {
+				$source    = substr( $source, 0, strrpos( $source, '/' ) );
+				$newsource = substr( $newsource, 0, strrpos( $newsource, '/' ) );
+			}
+		}
+
+		if ( file_exists( $source ) ) {
+			rename( $source, $newsource );
+		}
+
 		return $newsource;
 	}
 
