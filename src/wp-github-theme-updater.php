@@ -88,20 +88,18 @@ class Inc2734_WP_GitHub_Theme_Updater {
 	 * @return $source|WP_Error.
 	 */
 	public function _upgrader_source_selection( $source, $remote_source, $install ) {
-		if ( false === strpos( $source, $this->theme_name ) ) {
+		$theme_name  = $this->theme_name;
+		$slash_count = substr_count( $theme_name, '/' );
+		if ( $slash_count ) {
+			$theme_name = substr( $this->theme_name, 0, strpos( $this->theme_name, '/' ) );
+		}
+
+		if ( false === strpos( $source, $theme_name ) ) {
 			return $source;
 		}
 
-		$source      = untrailingslashit( $source );
-		$newsource   = trailingslashit( get_theme_root( $this->theme_name ) ) . untrailingslashit( $this->theme_name );
-		$slash_count = substr_count( $this->theme_name, '/' );
-		if ( $slash_count ) {
-			for ( $i = $slash_count; 0 < $i; $i -- ) {
-				$source    = substr( $source, 0, strrpos( $source, '/' ) );
-				$newsource = substr( $newsource, 0, strrpos( $newsource, '/' ) );
-			}
-		}
-
+		$path_parts = pathinfo( $source );
+		$newsource  = trailingslashit( $path_parts['dirname'] ) . trailingslashit( $theme_name );
 		if ( file_exists( $source ) ) {
 			rename( $source, $newsource );
 		}
