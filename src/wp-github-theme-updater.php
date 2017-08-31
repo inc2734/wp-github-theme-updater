@@ -92,6 +92,7 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		$slash_count = substr_count( $theme_name, '/' );
 		if ( $slash_count ) {
 			$theme_name = substr( $this->theme_name, 0, strpos( $this->theme_name, '/' ) );
+			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
 		}
 
 		if ( false === strpos( $source, $theme_name ) ) {
@@ -105,6 +106,22 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		}
 
 		return $newsource;
+	}
+
+	/**
+	 * If theme position is themes/my-theme/sub-dir/style.css, don't re-activate the theme.
+	 * So, I hooked switch_theme hook point and re-activate the theme.
+	 *
+	 * @param string $new_name Theme slug (NOT INCLUDING SUB DIRECTORY !) or Theme name.
+	 * @param WP_Theme $new_theme
+	 * @param WP_Theme $old_theme
+	 * @return void
+	 */
+	public function _re_activate( $new_name, $new_theme, $old_theme ) {
+		remove_action( 'switch_theme', [ $this, '_re_activate' ], 10 );
+		if ( ! $old_theme->errors() && $new_theme->errors() ) {
+			switch_theme( untrailingslashit( $old_theme->get_stylesheet() ) );
+		}
 	}
 
 	/**
