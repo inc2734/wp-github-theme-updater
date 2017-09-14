@@ -55,7 +55,14 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		$current = wp_get_theme( $this->theme_name );
 
 		if ( is_null( $this->api_data ) ) {
-			$this->api_data = $this->_get_github_api_data();
+			$transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
+			if ( false === get_transient( $transient_name ) ) {
+				$api_data = $this->_get_github_api_data();
+				set_transient( $transient_name, $api_data, 60 * 5 );
+				$this->api_data = $api_data;
+			} else {
+				$this->api_data = get_transient( $transient_name );
+			}
 		}
 
 		if ( is_wp_error( $this->api_data ) ) {
@@ -95,7 +102,7 @@ class Inc2734_WP_GitHub_Theme_Updater {
 			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
 		}
 
-		if ( false === strpos( $source, $theme_name ) ) {
+		if ( false === strpos( str_replace( ABSPATH, '', $source ), $theme_name ) ) {
 			return $source;
 		}
 
