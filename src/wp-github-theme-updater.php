@@ -1,4 +1,13 @@
 <?php
+/**
+ * @package wp-github-theme-updater
+ * @author inc2734
+ * @license GPL-2.0+
+ */
+
+/**
+ * Updating WordPress theme from GitHub
+ */
 class Inc2734_WP_GitHub_Theme_Updater {
 
 	/**
