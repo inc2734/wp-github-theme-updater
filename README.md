@@ -13,9 +13,9 @@ $ composer require inc2734/wp-github-theme-updater
 ```
 <?php
 // When Using composer auto loader
-// $updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater();
+$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( get_template(), 'user-name', 'repository' );
 
 // When not Using composer auto loader
-include_once( get_theme_file_path( '/vendor/inc2734/wp-github-theme-updater/src/wp-github-theme-updater.php' ) );
-$updater = new Inc2734_WP_GitHub_Theme_Updater( get_stylesheet(), 'user-name', 'repository' );
+// include_once( get_theme_file_path( '/vendor/inc2734/wp-github-theme-updater/src/wp-github-theme-updater.php' ) );
+// $updater = new Inc2734_WP_GitHub_Theme_Updater( get_template(), 'user-name', 'repository' );
 ```
