@@ -51,7 +51,8 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		$this->fields     = $fields;
 
 		add_filter( 'pre_set_site_transient_update_themes', [ $this, '_pre_set_site_transient_update_themes' ] );
-		add_filter( 'upgrader_source_selection', [ $this, '_upgrader_source_selection' ], 10, 3 );
+		add_filter( 'upgrader_pre_install', [ $this, '_upgrader_pre_install' ], 10, 2 );
+		add_filter( 'upgrader_source_selection', [ $this, '_upgrader_source_selection' ], 10, 4 );
 	}
 
 	/**
@@ -96,32 +97,56 @@ class Inc2734_WP_GitHub_Theme_Updater {
 	}
 
 	/**
+	 * Correspondence when the theme can not be updated
+	 *
+	 * @param bool $bool
+	 * @param array $hook_extra
+	 * @return bool|WP_Error.
+	 */
+	public function _upgrader_pre_install( $bool, $hook_extra ) {
+		if ( ! isset( $hook_extra['theme'] ) || $this->theme_name !== $hook_extra['theme'] ) {
+			return $bool;
+		}
+
+		global $wp_filesystem;
+
+		$theme_dir = trailingslashit( get_theme_root( $this->theme_name ) ) . $this->theme_name;
+		if ( ! $wp_filesystem->is_writable( $theme_dir ) ) {
+			return new WP_Error();
+		}
+
+		return $bool;
+	}
+
+	/**
 	 * Expand the theme
 	 *
 	 * @param string $source
 	 * @param string $remote_source
 	 * @param WP_Upgrader $install
+	 * @param array $args['hook_extra']
 	 * @return $source|WP_Error.
 	 */
-	public function _upgrader_source_selection( $source, $remote_source, $install ) {
-		$theme_name  = $this->theme_name;
-		$slash_count = substr_count( $theme_name, '/' );
-		if ( $slash_count ) {
-			$theme_name = substr( $this->theme_name, 0, strpos( $this->theme_name, '/' ) );
-			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
-		}
-
-		if ( false === strpos( str_replace( ABSPATH, '', $source ), $theme_name ) ) {
+	public function _upgrader_source_selection( $source, $remote_source, $install, $hook_extra ) {
+		if ( ! isset( $hook_extra['theme'] ) || $this->theme_name !== $hook_extra['theme'] ) {
 			return $source;
 		}
 
-		$path_parts = pathinfo( $source );
-		$newsource  = trailingslashit( $path_parts['dirname'] ) . trailingslashit( $theme_name );
-		if ( file_exists( $source ) ) {
-			rename( $source, $newsource );
+		global $wp_filesystem;
+
+		$slash_count = substr_count( $this->theme_name, '/' );
+		if ( $slash_count ) {
+			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
 		}
 
-		return $newsource;
+		$source_theme_dir = untrailingslashit( WP_CONTENT_DIR ) . '/upgrade';
+		if ( $wp_filesystem->is_writable( $source_theme_dir ) && $wp_filesystem->is_writable( $source ) ) {
+			$newsource = trailingslashit( $source_theme_dir ) . trailingslashit( $this->theme_name );
+			rename( $source, $newsource );
+			return $newsource;
+		}
+
+		return new WP_Error();
 	}
 
 	/**
