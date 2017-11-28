@@ -142,8 +142,9 @@ class Inc2734_WP_GitHub_Theme_Updater {
 		$source_theme_dir = untrailingslashit( WP_CONTENT_DIR ) . '/upgrade';
 		if ( $wp_filesystem->is_writable( $source_theme_dir ) && $wp_filesystem->is_writable( $source ) ) {
 			$newsource = trailingslashit( $source_theme_dir ) . trailingslashit( $this->theme_name );
-			rename( $source, $newsource );
-			return $newsource;
+			if ( $wp_filesystem->move( $source, $newsource, true ) ) {
+				return $newsource;
+			}
 		}
 
 		return new WP_Error();
