@@ -111,7 +111,7 @@ class GitHub_Theme_Updater {
 
 		$theme_dir = trailingslashit( get_theme_root( $this->theme_name ) ) . $this->theme_name;
 		if ( ! $wp_filesystem->is_writable( $theme_dir ) ) {
-			return new WP_Error();
+			return new \WP_Error();
 		}
 
 		return $bool;
@@ -146,7 +146,7 @@ class GitHub_Theme_Updater {
 			}
 		}
 
-		return new WP_Error();
+		return new \WP_Error();
 	}
 
 	/**
@@ -227,7 +227,7 @@ class GitHub_Theme_Updater {
 			return $body;
 		}
 
-		return new WP_Error(
+		return new \WP_Error(
 			$response_code,
 			'Inc2734_WP_GitHub_Theme_Updater error. ' . $body->message
 		);
