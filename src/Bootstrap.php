@@ -7,7 +7,7 @@
 
 namespace Inc2734\WP_GitHub_Theme_Updater;
 
-class GitHub_Theme_Updater {
+class Bootstrap {
 
 	/**
 	 * GitHub user name
@@ -84,6 +84,14 @@ class GitHub_Theme_Updater {
 		}
 
 		$package = $this->_get_zip_url( $this->api_data );
+		$http_status_code = $this->get_http_status_code( $package );
+		if ( ! $package || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
+			$this->api_data = new \WP_Error(
+				$http_status_code,
+				'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $package
+			);
+			return $transient;
+		}
 
 		$transient->response[ $this->theme_name ] = [
 			'theme'       => $this->theme_name,
@@ -175,15 +183,18 @@ class GitHub_Theme_Updater {
 			return;
 		}
 
-		add_action( 'admin_notices', function() {
-			?>
-			<div class="notice notice-error">
-				<p>
-					<?php echo esc_html( $this->api_data->get_error_message() ); ?>
-				</p>
-			</div>
-			<?php
-		} );
+		add_action(
+			'admin_notices',
+			function() {
+				?>
+				<div class="notice notice-error">
+					<p>
+						<?php echo esc_html( $this->api_data->get_error_message() ); ?>
+					</p>
+				</div>
+				<?php
+			}
+		);
 	}
 
 	/**
@@ -193,20 +204,25 @@ class GitHub_Theme_Updater {
 	 * @return string
 	 */
 	protected function _get_zip_url( $remote ) {
+		$url = false;
 		if ( ! empty( $remote->assets ) && is_array( $remote->assets ) ) {
 			if ( ! empty( $remote->assets[0] ) && is_object( $remote->assets[0] ) ) {
 				if ( ! empty( $remote->assets[0]->browser_download_url ) ) {
-					return $remote->assets[0]->browser_download_url;
+					$url = $remote->assets[0]->browser_download_url;
 				}
 			}
 		}
 
-		return sprintf(
-			'https://github.com/%1$s/%2$s/archive/%3$s.zip',
-			$this->user_name,
-			$this->repository,
-			$remote->tag_name
-		);
+		if ( ! $url ) {
+			$url = sprintf(
+				'https://github.com/%1$s/%2$s/archive/%3$s.zip',
+				$this->user_name,
+				$this->repository,
+				$remote->tag_name
+			);
+		}
+
+		return apply_filters( 'inc2734_github_theme_updater_zip_url', $url, $this->user_name, $this->repository, $remote->tag_name );
 	}
 
 	/**
@@ -245,11 +261,14 @@ class GitHub_Theme_Updater {
 			$this->repository
 		);
 
-		return wp_remote_get( $url, [
-			'headers' => [
-				'Accept-Encoding' => '',
-			],
-		] );
+		return wp_remote_get(
+			apply_filters( 'inc2734_github_theme_updater_request_url', $url, $this->user_name, $this->repository ),
+			[
+				'headers' => [
+					'Accept-Encoding' => '',
+				],
+			]
+		);
 	}
 
 	/**
@@ -276,5 +295,26 @@ class GitHub_Theme_Updater {
 			$this->_sanitize_version( $remote_version ),
 			'<'
 		);
+	}
+
+	/**
+	 * Return http status code from $url
+	 *
+	 * @param string $url
+	 * @return int
+	 */
+	protected function get_http_status_code( $url ) {
+		$handle = curl_init( $url );
+
+		curl_setopt( $handle, CURLOPT_HEADER, true );
+		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt( $handle, CURLOPT_NOBODY, true );
+
+		curl_exec( $handle );
+		$status  = curl_getinfo( $handle, CURLINFO_HTTP_CODE );
+
+		curl_close( $handle );
+
+		return $status;
 	}
 }

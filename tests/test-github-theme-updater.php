@@ -33,8 +33,11 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		}
 	}
 
-	public function test_success_transmission() {
-		$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
+	/**
+	 * @test
+	 */
+	public function success_transmission() {
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
 		$transient = apply_filters( 'pre_set_site_transient_update_themes', false );
 		$expected  = new stdClass();
 		$expected->response = [
@@ -48,14 +51,20 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$this->assertEquals( $expected, $transient );
 	}
 
-	public function test_fail_transmission() {
-		$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( 'twentyseventeen', 'inc2734', 'dummy-norepo' );
+	/**
+	 * @test
+	 */
+	public function fail_transmission() {
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'twentyseventeen', 'inc2734', 'dummy-norepo' );
 		$transient = apply_filters( 'pre_set_site_transient_update_themes', false );
 		$this->assertFalse( $transient );
 	}
 
-	public function test_upgrader_pre_install() {
-		$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
+	/**
+	 * @test
+	 */
+	public function upgrader_pre_install() {
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
 
 		$result = $updater->_upgrader_pre_install( true, [ 'theme' => 'twentysixteen' ] );
 		$this->assertTrue( $result );
@@ -69,10 +78,13 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		rename( WP_CONTENT_DIR . '/themes/twentyseventeen-org', WP_CONTENT_DIR . '/themes/twentyseventeen' );
 	}
 
-	public function test_upgrader_source_selection() {
+	/**
+	 * @test
+	 */
+	public function upgrader_source_selection() {
 		mkdir( $this->_upgrade_dir . '/twentyseventeen-xxx' );
 
-		$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
 
 		$newsource = $updater->_upgrader_source_selection(
 			$this->_upgrade_dir . '/twentyseventeen-xxx',
@@ -91,11 +103,14 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$this->assertEquals( $this->_upgrade_dir . '/twentyseventeen/', $newsource );
 	}
 
-	public function test_upgrader_source_selection__subdir() {
+	/**
+	 * @test
+	 */
+	public function upgrader_source_selection__subdir() {
 		mkdir( $this->_upgrade_dir . '/foo' );
 		mkdir( $this->_upgrade_dir . '/foo/resources-xxx' );
 
-		$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
 
 		$newsource = $updater->_upgrader_source_selection(
 			$this->_upgrade_dir . '/foo/resources-xxx',
@@ -112,5 +127,25 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 			[ 'theme' => 'foo/resources' ]
 		);
 		$this->assertEquals( $this->_upgrade_dir . '/foo/resources/', $newsource );
+	}
+
+	/**
+	 * @test
+	 */
+	public function get_http_status_code() {
+		$class = new ReflectionClass( 'Inc2734\WP_GitHub_Theme_Updater\Bootstrap' );
+		$method = $class->getMethod( 'get_http_status_code' );
+		$method->setAccessible( true );
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
+
+		$this->assertEquals(
+			302,
+			$method->invokeArgs(
+				$updater,
+				[
+					'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip',
+				]
+			)
+		);
 	}
 }

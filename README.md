@@ -13,5 +13,36 @@ $ composer require inc2734/wp-github-theme-updater
 ```
 <?php
 // When Using composer auto loader
-$updater = new Inc2734\WP_GitHub_Theme_Updater\GitHub_Theme_Updater( get_template(), 'user-name', 'repository' );
+$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( get_template(), 'user-name', 'repository' );
+```
+
+## Filter hooks
+### inc2734_github_theme_updater_zip_url
+
+Customize downloaded api url.
+
+```
+add_filter(
+  'inc2734_github_theme_updater_zip_url',
+  function( $url, $user_name, $repository, $tag_name ) {
+    return $url;
+  },
+  10,
+  4
+);
+```
+
+### inc2734_github_theme_updater_request_url
+
+Customize requested api url.
+
+```
+add_filter(
+  'inc2734_github_theme_updater_request_url',
+  function( $url, $user_name, $repository ) {
+    return $url;
+  },
+  10,
+  3
+);
 ```
