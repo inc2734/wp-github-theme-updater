@@ -134,7 +134,7 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 	 */
 	public function get_http_status_code() {
 		$class = new ReflectionClass( 'Inc2734\WP_GitHub_Theme_Updater\Bootstrap' );
-		$method = $class->getMethod( 'get_http_status_code' );
+		$method = $class->getMethod( '_get_http_status_code' );
 		$method->setAccessible( true );
 		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
 
@@ -147,5 +147,30 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 				]
 			)
 		);
+	}
+
+	/**
+	 * @test
+	 */
+	public function request_github_api() {
+		$class = new ReflectionClass( 'Inc2734\WP_GitHub_Theme_Updater\Bootstrap' );
+		$method = $class->getMethod( '_request_github_api' );
+		$method->setAccessible( true );
+		$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
+
+		add_filter(
+			'inc2734_github_theme_updater_request_url',
+			function( $url ) {
+				return 'https://snow-monkey.2inc.org/github-api/response.json';
+			}
+		);
+
+		$response = $method->invokeArgs(
+			$updater,
+			[]
+		);
+		$body = json_decode( wp_remote_retrieve_body( $response ) );
+
+		$this->assertTrue( 0 === strpos( $body->assets[0]->browser_download_url, 'https://snow-monkey.2inc.org' ) );
 	}
 }

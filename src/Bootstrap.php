@@ -64,18 +64,15 @@ class Bootstrap {
 		$current = wp_get_theme( $this->theme_name );
 
 		if ( is_null( $this->api_data ) ) {
-			$transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
-			if ( false === get_transient( $transient_name ) ) {
-				$api_data = $this->_get_github_api_data();
-				set_transient( $transient_name, $api_data, 60 * 5 );
-				$this->api_data = $api_data;
-			} else {
-				$this->api_data = get_transient( $transient_name );
-			}
+			$this->api_data = $this->_get_transient_api_data();
 		}
 
 		if ( is_wp_error( $this->api_data ) ) {
 			$this->_set_notice_error_about_github_api();
+			return $transient;
+		}
+
+		if ( ! isset( $this->api_data->tag_name ) ) {
 			return $transient;
 		}
 
@@ -84,7 +81,7 @@ class Bootstrap {
 		}
 
 		$package = $this->_get_zip_url( $this->api_data );
-		$http_status_code = $this->get_http_status_code( $package );
+		$http_status_code = $this->_get_http_status_code( $package );
 		if ( ! $package || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
 			$this->api_data = new \WP_Error(
 				$http_status_code,
@@ -226,6 +223,23 @@ class Bootstrap {
 	}
 
 	/**
+	 * Return the data from the Transient API or GitHub API.
+	 *
+	 * @return object|WP_Error
+	 */
+	protected function _get_transient_api_data() {
+		$transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
+		if ( false === get_transient( $transient_name ) || 1 ) {
+			$api_data = $this->_get_github_api_data();
+			set_transient( $transient_name, $api_data, 60 * 5 );
+		} else {
+			$api_data = get_transient( $transient_name );
+		}
+
+		return $api_data;
+	}
+
+	/**
 	 * Return the data from the GitHub API.
 	 *
 	 * @return object|WP_Error
@@ -303,7 +317,7 @@ class Bootstrap {
 	 * @param string $url
 	 * @return int
 	 */
-	protected function get_http_status_code( $url ) {
+	protected function _get_http_status_code( $url ) {
 		$handle = curl_init( $url );
 
 		curl_setopt( $handle, CURLOPT_HEADER, true );
