@@ -269,6 +269,8 @@ class Bootstrap {
 	 * @return json|WP_Error
 	 */
 	protected function _request_github_api() {
+		global $wp_version;
+
 		$url = sprintf(
 			'https://api.github.com/repos/%1$s/%2$s/releases/latest',
 			$this->user_name,
@@ -278,7 +280,8 @@ class Bootstrap {
 		return wp_remote_get(
 			apply_filters( 'inc2734_github_theme_updater_request_url', $url, $this->user_name, $this->repository ),
 			[
-				'headers' => [
+				'user-agent' => 'WordPress/' . $wp_version,
+				'headers'    => [
 					'Accept-Encoding' => '',
 				],
 			]
@@ -318,10 +321,13 @@ class Bootstrap {
 	 * @return int
 	 */
 	protected function _get_http_status_code( $url ) {
+		global $wp_version;
+
 		$response = wp_remote_head(
 			$url,
 			[
-				'headers' => [
+				'user-agent' => 'WordPress/' . $wp_version,
+				'headers'    => [
 					'Accept-Encoding' => '',
 				],
 			]
