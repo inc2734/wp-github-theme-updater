@@ -318,17 +318,15 @@ class Bootstrap {
 	 * @return int
 	 */
 	protected function _get_http_status_code( $url ) {
-		$handle = curl_init( $url );
+		$response = wp_remote_head(
+			$url,
+			[
+				'headers' => [
+					'Accept-Encoding' => '',
+				],
+			]
+		);
 
-		curl_setopt( $handle, CURLOPT_HEADER, true );
-		curl_setopt( $handle, CURLOPT_RETURNTRANSFER, true );
-		curl_setopt( $handle, CURLOPT_NOBODY, true );
-
-		curl_exec( $handle );
-		$status  = curl_getinfo( $handle, CURLINFO_HTTP_CODE );
-
-		curl_close( $handle );
-
-		return $status;
+		return wp_remote_retrieve_response_code( $response );
 	}
 }
