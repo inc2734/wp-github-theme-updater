@@ -10,6 +10,13 @@ namespace Inc2734\WP_GitHub_Theme_Updater;
 class Bootstrap {
 
 	/**
+	 * The theme name
+	 *
+	 * @var string
+	 */
+	protected $theme_name;
+
+	/**
 	 * GitHub user name
 	 *
 	 * @var string
@@ -49,9 +56,11 @@ class Bootstrap {
 		$this->repository = $repository;
 		$this->fields     = $fields;
 
+		$upgrader = new App\Model\Upgrader( $theme_name );
+
 		add_filter( 'pre_set_site_transient_update_themes', [ $this, '_pre_set_site_transient_update_themes' ] );
-		add_filter( 'upgrader_pre_install', [ $this, '_upgrader_pre_install' ], 10, 2 );
-		add_filter( 'upgrader_source_selection', [ $this, '_upgrader_source_selection' ], 10, 4 );
+		add_filter( 'upgrader_pre_install', [ $upgrader, 'pre_install' ], 10, 2 );
+		add_filter( 'upgrader_source_selection', [ $upgrader, 'source_selection' ], 10, 4 );
 	}
 
 	/**
@@ -98,60 +107,6 @@ class Bootstrap {
 		];
 
 		return $transient;
-	}
-
-	/**
-	 * Correspondence when the theme can not be updated
-	 *
-	 * @param bool $bool
-	 * @param array $hook_extra
-	 * @return bool|WP_Error.
-	 */
-	public function _upgrader_pre_install( $bool, $hook_extra ) {
-		if ( ! isset( $hook_extra['theme'] ) || $this->theme_name !== $hook_extra['theme'] ) {
-			return $bool;
-		}
-
-		global $wp_filesystem;
-
-		$theme_dir = trailingslashit( get_theme_root( $this->theme_name ) ) . $this->theme_name;
-		if ( ! $wp_filesystem->is_writable( $theme_dir ) ) {
-			return new \WP_Error();
-		}
-
-		return $bool;
-	}
-
-	/**
-	 * Expand the theme
-	 *
-	 * @param string $source
-	 * @param string $remote_source
-	 * @param WP_Upgrader $install
-	 * @param array $args['hook_extra']
-	 * @return $source|WP_Error.
-	 */
-	public function _upgrader_source_selection( $source, $remote_source, $install, $hook_extra ) {
-		if ( ! isset( $hook_extra['theme'] ) || $this->theme_name !== $hook_extra['theme'] ) {
-			return $source;
-		}
-
-		global $wp_filesystem;
-
-		$slash_count = substr_count( $this->theme_name, '/' );
-		if ( $slash_count ) {
-			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
-		}
-
-		$source_theme_dir = untrailingslashit( WP_CONTENT_DIR ) . '/upgrade';
-		if ( $wp_filesystem->is_writable( $source_theme_dir ) && $wp_filesystem->is_writable( $source ) ) {
-			$newsource = trailingslashit( $source_theme_dir ) . trailingslashit( $this->theme_name );
-			if ( $wp_filesystem->move( $source, $newsource, true ) ) {
-				return $newsource;
-			}
-		}
-
-		return new \WP_Error();
 	}
 
 	/**
@@ -202,6 +157,7 @@ class Bootstrap {
 	 */
 	protected function _get_zip_url( $remote ) {
 		$url = false;
+
 		if ( ! empty( $remote->assets ) && is_array( $remote->assets ) ) {
 			if ( ! empty( $remote->assets[0] ) && is_object( $remote->assets[0] ) ) {
 				if ( ! empty( $remote->assets[0]->browser_download_url ) ) {
@@ -210,16 +166,28 @@ class Bootstrap {
 			}
 		}
 
-		if ( ! $url ) {
+		$tag_name = isset( $remote->tag_name ) ? $remote->tag_name : null;
+
+		if ( ! $url && $tag_name ) {
 			$url = sprintf(
 				'https://github.com/%1$s/%2$s/archive/%3$s.zip',
 				$this->user_name,
 				$this->repository,
-				$remote->tag_name
+				$tag_name
 			);
 		}
 
-		return apply_filters( 'inc2734_github_theme_updater_zip_url', $url, $this->user_name, $this->repository, $remote->tag_name );
+		return apply_filters(
+			sprintf(
+				'inc2734_github_theme_updater_zip_url_%1$s/%2$s',
+				$this->user_name,
+				$this->repository
+			),
+			$url,
+			$this->user_name,
+			$this->repository,
+			$tag_name
+		);
 	}
 
 	/**
@@ -278,7 +246,16 @@ class Bootstrap {
 		);
 
 		return wp_remote_get(
-			apply_filters( 'inc2734_github_theme_updater_request_url', $url, $this->user_name, $this->repository ),
+			apply_filters(
+				sprintf(
+					'inc2734_github_theme_updater_request_url_%1$s/%2$s',
+					$this->user_name,
+					$this->repository
+				),
+				$url,
+				$this->user_name,
+				$this->repository
+			),
 			[
 				'user-agent' => 'WordPress/' . $wp_version,
 				'headers'    => [
