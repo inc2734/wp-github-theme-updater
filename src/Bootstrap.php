@@ -38,13 +38,6 @@ class Bootstrap {
 	protected $fields = [];
 
 	/**
-	 * Cache of GitHub API data
-	 *
-	 * @var object
-	 */
-	protected $api_data;
-
-	/**
 	 * @param string $theme_name
 	 * @param string $user_name
 	 * @param string $repository
@@ -70,38 +63,32 @@ class Bootstrap {
 	 * @return false|array
 	 */
 	public function _pre_set_site_transient_update_themes( $transient ) {
-		$current = wp_get_theme( $this->theme_name );
+		$current  = wp_get_theme( $this->theme_name );
+		$api_data = $this->_get_transient_api_data();
 
-		if ( is_null( $this->api_data ) ) {
-			$this->api_data = $this->_get_transient_api_data();
-		}
-
-		if ( is_wp_error( $this->api_data ) ) {
+		if ( is_wp_error( $api_data ) ) {
 			$this->_set_notice_error_about_github_api();
 			return $transient;
 		}
 
-		if ( ! isset( $this->api_data->tag_name ) ) {
+		if ( ! isset( $api_data->tag_name ) ) {
 			return $transient;
 		}
 
-		if ( ! $this->_should_update( $current['Version'], $this->api_data->tag_name ) ) {
+		if ( ! $this->_should_update( $current['Version'], $api_data->tag_name ) ) {
 			return $transient;
 		}
 
-		$package = $this->_get_zip_url( $this->api_data );
+		$package = $this->_get_zip_url( $api_data );
 		$http_status_code = $this->_get_http_status_code( $package );
 		if ( ! $package || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
-			$this->api_data = new \WP_Error(
-				$http_status_code,
-				'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $package
-			);
+			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $package );
 			return $transient;
 		}
 
 		$transient->response[ $this->theme_name ] = [
 			'theme'       => $this->theme_name,
-			'new_version' => $this->api_data->tag_name,
+			'new_version' => $api_data->tag_name,
 			'url'         => ( ! empty( $this->fields['homepage'] ) ) ? $this->fields['homepage'] : '',
 			'package'     => $package,
 		];
@@ -131,7 +118,8 @@ class Bootstrap {
 	 * @return void
 	 */
 	protected function _set_notice_error_about_github_api() {
-		if ( ! is_wp_error( $this->api_data ) ) {
+		$api_data = $this->_get_transient_api_data();
+		if ( ! is_wp_error( $api_data ) ) {
 			return;
 		}
 
@@ -141,7 +129,7 @@ class Bootstrap {
 				?>
 				<div class="notice notice-error">
 					<p>
-						<?php echo esc_html( $this->api_data->get_error_message() ); ?>
+						<?php echo esc_html( $api_data->get_error_message() ); ?>
 					</p>
 				</div>
 				<?php
@@ -197,13 +185,14 @@ class Bootstrap {
 	 */
 	protected function _get_transient_api_data() {
 		$transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
-		if ( false === get_transient( $transient_name ) || 1 ) {
-			$api_data = $this->_get_github_api_data();
-			set_transient( $transient_name, $api_data, 60 * 5 );
-		} else {
-			$api_data = get_transient( $transient_name );
+		$transient = get_transient( $transient_name );
+
+		if ( false !== $transient ) {
+			return $transient;
 		}
 
+		$api_data = $this->_get_github_api_data();
+		set_transient( $transient_name, $api_data, 60 * 5 );
 		return $api_data;
 	}
 
