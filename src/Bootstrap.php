@@ -125,7 +125,7 @@ class Bootstrap {
 
 		add_action(
 			'admin_notices',
-			function() {
+			function() use ( $api_data ) {
 				?>
 				<div class="notice notice-error">
 					<p>
