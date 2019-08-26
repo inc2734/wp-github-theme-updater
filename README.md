@@ -17,7 +17,7 @@ $updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( get_template(), 'user-
 ```
 
 ## Filter hooks
-### inc2734_github_plugin_updater_zip_url_<$user_name>/<$repository>
+### inc2734_github_theme_updater_zip_url_<$user_name>/<$repository>
 
 Customize downloaded api url.
 

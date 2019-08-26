@@ -2,7 +2,7 @@
 /**
  * PHPUnit bootstrap file
  *
- * @package wp-github-plugin-updater
+ * @package wp-github-theme-updater
  */
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
