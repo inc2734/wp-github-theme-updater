@@ -7,6 +7,8 @@
 
 namespace Inc2734\WP_GitHub_Theme_Updater;
 
+use WP_Error;
+
 class Bootstrap {
 
 	/**
@@ -214,7 +216,7 @@ class Bootstrap {
 			return $body;
 		}
 
-		return new \WP_Error(
+		return new WP_Error(
 			$response_code,
 			'Inc2734_WP_GitHub_Theme_Updater error. ' . $body->message
 		);

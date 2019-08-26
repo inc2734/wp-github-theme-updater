@@ -7,6 +7,8 @@
 
 namespace Inc2734\WP_GitHub_Theme_Updater\App\Model;
 
+use WP_Error;
+
 class Upgrader {
 
 	/**
@@ -39,7 +41,7 @@ class Upgrader {
 
 		$theme_dir = trailingslashit( get_theme_root( $this->theme_name ) ) . $this->theme_name;
 		if ( ! $wp_filesystem->is_writable( $theme_dir ) ) {
-			return new \WP_Error();
+			return new WP_Error();
 		}
 
 		return $bool;
@@ -74,6 +76,6 @@ class Upgrader {
 			}
 		}
 
-		return new \WP_Error();
+		return new WP_Error();
 	}
 }
