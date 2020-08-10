@@ -42,14 +42,12 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$expected  = new stdClass();
 		$expected->response = [
 			'twentyseventeen' => [
-				'theme'       => 'twentyseventeen',
-				'new_version' => '1000000',
-				'url'         => false,
-				'package'     => 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip',
-				'update'      => [
-					'requires'     => '4.7',
-					'requires_php' => '5.2.4'
-				],
+				'theme'        => 'twentyseventeen',
+				'new_version'  => '1000000',
+				'url'          => false,
+				'package'      => 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip',
+				'requires'     => '4.7',
+				'requires_php' => '5.2.4'
 			],
 		];
 		$this->assertEquals( $expected, $transient );

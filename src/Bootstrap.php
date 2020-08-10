@@ -8,6 +8,7 @@
 namespace Inc2734\WP_GitHub_Theme_Updater;
 
 use WP_Error;
+use stdClass;
 use Inc2734\WP_GitHub_Theme_Updater\App\Model\Fields;
 
 class Bootstrap {
@@ -62,6 +63,8 @@ class Bootstrap {
 	/**
 	 * Overwirte site_transient_update_themes from GitHub API
 	 *
+	 * @see https://make.wordpress.org/core/2020/07/30/recommended-usage-of-the-updates-api-to-support-the-auto-updates-ui-for-plugins-and-themes-in-wordpress-5-5/
+	 *
 	 * @param false|array $transient
 	 * @return false|array
 	 */
@@ -70,15 +73,11 @@ class Bootstrap {
 		$api_data = $this->_get_transient_api_data();
 
 		if ( is_wp_error( $api_data ) ) {
-			$this->_set_notice_error_about_github_api();
+			error_log( $api_data->get_error_message() );
 			return $transient;
 		}
 
 		if ( ! isset( $api_data->tag_name ) ) {
-			return $transient;
-		}
-
-		if ( ! $this->_should_update( $current['Version'], $api_data->tag_name ) ) {
 			return $transient;
 		}
 
@@ -89,6 +88,39 @@ class Bootstrap {
 			return $transient;
 		}
 
+		$update = [
+			'theme'        => $this->theme_name,
+			'new_version'  => $api_data->tag_name,
+			'url'          => $this->fields->get( 'homepage' ),
+			'package'      => $package,
+			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $current->get( 'RequiresWP' ),
+			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $current->get( 'RequiresPHP' ),
+		];
+
+		$update = apply_filters(
+			sprintf(
+				'inc2734_github_theme_updater_transient_response_%1$s/%2$s',
+				$this->user_name,
+				$this->repository
+			),
+			$update
+		);
+
+		if ( ! $this->_should_update( $current['Version'], $api_data->tag_name ) ) {
+			if ( false === $transient ) {
+				$transient = new stdClass();
+				$transient->no_update = [];
+			}
+			$transient->no_update[ $this->theme_name ] = $update;
+		} else {
+			if ( false === $transient ) {
+				$transient = new stdClass();
+				$transient->response = [];
+			}
+			$transient->response[ $this->theme_name ] = $update;
+		}
+
+		/*
 		$transient_response = [
 			'theme'        => $this->theme_name,
 			'new_version'  => $api_data->tag_name,
@@ -99,16 +131,7 @@ class Bootstrap {
 				'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $current->get( 'RequiresPHP' ),
 			],
 		];
-
-		$transient_response = apply_filters(
-			sprintf(
-				'inc2734_github_theme_updater_transient_response_%1$s/%2$s',
-				$this->user_name,
-				$this->repository
-			),
-			$transient_response
-		);
-		$transient->response[ $this->theme_name ] = (array) $transient_response;
+		*/
 
 		return $transient;
 	}
@@ -127,30 +150,6 @@ class Bootstrap {
 		if ( ! $old_theme->errors() && $new_theme->errors() ) {
 			switch_theme( untrailingslashit( $old_theme->get_stylesheet() ) );
 		}
-	}
-
-	/**
-	 * Set notice error about GitHub API using admin_notice hook
-	 *
-	 * @return void
-	 */
-	protected function _set_notice_error_about_github_api() {
-		add_action(
-			'admin_notices',
-			function() {
-				$api_data = $this->_get_transient_api_data();
-				if ( ! is_wp_error( $api_data ) ) {
-					return;
-				}
-				?>
-				<div class="notice notice-error">
-					<p>
-						<?php echo esc_html( $api_data->get_error_message() ); ?>
-					</p>
-				</div>
-				<?php
-			}
-		);
 	}
 
 	/**
@@ -174,11 +173,21 @@ class Bootstrap {
 
 		if ( ! $url && $tag_name ) {
 			$url = sprintf(
-				'https://github.com/%1$s/%2$s/archive/%3$s.zip',
+				'https://github.com/%1$s/%2$s/releases/download/%3$s/%2$s.zip',
 				$this->user_name,
 				$this->repository,
 				$tag_name
 			);
+
+			$http_status_code = $this->_get_http_status_code( $url );
+			if ( ! $url || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
+				$url = sprintf(
+					'https://github.com/%1$s/%2$s/archive/%3$s.zip',
+					$this->user_name,
+					$this->repository,
+					$tag_name
+				);
+			}
 		}
 
 		return apply_filters(
@@ -270,6 +279,7 @@ class Bootstrap {
 			),
 			[
 				'user-agent' => 'WordPress/' . $wp_version,
+				'timeout'    => 30,
 				'headers'    => [
 					'Accept-Encoding' => '',
 				],
@@ -316,6 +326,7 @@ class Bootstrap {
 			$url,
 			[
 				'user-agent' => 'WordPress/' . $wp_version,
+				'timeout'    => 30,
 				'headers'    => [
 					'Accept-Encoding' => '',
 				],
