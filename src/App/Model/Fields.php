@@ -60,7 +60,7 @@ class Fields {
 	 *
 	 * @var string|boolean
 	 */
-	public $downloadlink = false;
+	public $download_link = false;
 
 	/**
 	 * Whether to return the date of the last update.

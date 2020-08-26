@@ -10,6 +10,8 @@ namespace Inc2734\WP_GitHub_Theme_Updater;
 use WP_Error;
 use stdClass;
 use Inc2734\WP_GitHub_Theme_Updater\App\Model\Fields;
+use Inc2734\WP_GitHub_Theme_Updater\App\Model\GitHubReleases;
+use Inc2734\WP_GitHub_Theme_Updater\App\Model\GitHubRepositoryContent;
 
 class Bootstrap {
 
@@ -42,6 +44,16 @@ class Bootstrap {
 	protected $fields;
 
 	/**
+	 * @var GitHubReleases
+	 */
+	protected $github_releases;
+
+	/**
+	 * @var GitHubRepositoryContent
+	 */
+	protected $github_repository_content;
+
+	/**
 	 * @param string $theme_name
 	 * @param string $user_name
 	 * @param string $repository
@@ -53,15 +65,20 @@ class Bootstrap {
 		$this->repository = $repository;
 		$this->fields     = new Fields( $fields );
 
+		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
+
 		$upgrader = new App\Model\Upgrader( $theme_name );
+		$this->github_releases = new GitHubReleases( $theme_name, $user_name, $repository );
+		$this->github_repository_content = new GitHubRepositoryContent( $theme_name, $user_name, $repository );
 
 		add_filter( 'pre_set_site_transient_update_themes', [ $this, '_pre_set_site_transient_update_themes' ] );
 		add_filter( 'upgrader_pre_install', [ $upgrader, 'pre_install' ], 10, 2 );
 		add_filter( 'upgrader_source_selection', [ $upgrader, 'source_selection' ], 10, 4 );
+		add_action( 'upgrader_process_complete', [ $this, '_upgrader_process_complete' ], 10, 2 );
 	}
 
 	/**
-	 * Overwirte site_transient_update_themes from GitHub API
+	 * Overwrite site_transient_update_themes from GitHub API
 	 *
 	 * @see https://make.wordpress.org/core/2020/07/30/recommended-usage-of-the-updates-api-to-support-the-auto-updates-ui-for-plugins-and-themes-in-wordpress-5-5/
 	 *
@@ -69,32 +86,29 @@ class Bootstrap {
 	 * @return false|array
 	 */
 	public function _pre_set_site_transient_update_themes( $transient ) {
-		$current  = wp_get_theme( $this->theme_name );
-		$api_data = $this->_get_transient_api_data();
-
-		if ( is_wp_error( $api_data ) ) {
-			error_log( $api_data->get_error_message() );
+		$response = $this->github_releases->get();
+		if ( is_wp_error( $response ) ) {
+			error_log( $response->get_error_message() );
 			return $transient;
 		}
 
-		if ( ! isset( $api_data->tag_name ) ) {
+		if ( ! isset( $response->tag_name ) ) {
 			return $transient;
 		}
 
-		$package = $this->_get_zip_url( $api_data );
-		$http_status_code = $this->_get_http_status_code( $package );
-		if ( ! $package || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $package );
+		if ( ! $response->package ) {
 			return $transient;
 		}
 
+		$remote = $this->github_repository_content->get_headers();
 		$update = [
 			'theme'        => $this->theme_name,
-			'new_version'  => $api_data->tag_name,
+			'new_version'  => $response->tag_name,
 			'url'          => $this->fields->get( 'homepage' ),
-			'package'      => $package,
-			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $current->get( 'RequiresWP' ),
-			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $current->get( 'RequiresPHP' ),
+			'package'      => $response->package,
+			'tested'       => $this->fields->get( 'tested' ) ? $this->fields->get( 'tested' ) : $remote['Tested up to'],
+			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $remote['RequiresWP'],
+			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $remote['RequiresPHP'],
 		];
 
 		$update = apply_filters(
@@ -106,7 +120,8 @@ class Bootstrap {
 			$update
 		);
 
-		if ( ! $this->_should_update( $current['Version'], $api_data->tag_name ) ) {
+		$current = wp_get_theme( $this->theme_name );
+		if ( ! $this->_should_update( $current['Version'], $response->tag_name ) ) {
 			if ( false === $transient ) {
 				$transient = new stdClass();
 				$transient->no_update = [];
@@ -120,20 +135,24 @@ class Bootstrap {
 			$transient->response[ $this->theme_name ] = $update;
 		}
 
-		/*
-		$transient_response = [
-			'theme'        => $this->theme_name,
-			'new_version'  => $api_data->tag_name,
-			'url'          => $this->fields->get( 'homepage' ),
-			'package'      => $package,
-			'update'       => [
-				'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $current->get( 'RequiresWP' ),
-				'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $current->get( 'RequiresPHP' ),
-			],
-		];
-		*/
-
 		return $transient;
+	}
+
+	/**
+	 * Fires when the upgrader process is complete.
+	 *
+	 * @param WP_Upgrader $upgrader_object
+	 * @param array $hook_extra
+	 */
+	public function _upgrader_process_complete( $upgrader_object, $hook_extra ) {
+		if ( 'update' === $hook_extra['action'] && 'theme' === $hook_extra['type'] ) {
+			foreach ( $hook_extra['themes'] as $theme ) {
+				if ( $theme === $this->theme_name ) {
+					$this->github_releases->delete_transient();
+					$this->github_repository_content->delete_transient();
+				}
+			}
+		}
 	}
 
 	/**
@@ -150,141 +169,6 @@ class Bootstrap {
 		if ( ! $old_theme->errors() && $new_theme->errors() ) {
 			switch_theme( untrailingslashit( $old_theme->get_stylesheet() ) );
 		}
-	}
-
-	/**
-	 * Return URL of new zip file
-	 *
-	 * @param object $remote Data from GitHub API
-	 * @return string
-	 */
-	protected function _get_zip_url( $remote ) {
-		$url = false;
-
-		if ( ! empty( $remote->assets ) && is_array( $remote->assets ) ) {
-			if ( ! empty( $remote->assets[0] ) && is_object( $remote->assets[0] ) ) {
-				if ( ! empty( $remote->assets[0]->browser_download_url ) ) {
-					$url = $remote->assets[0]->browser_download_url;
-				}
-			}
-		}
-
-		$tag_name = isset( $remote->tag_name ) ? $remote->tag_name : null;
-
-		if ( ! $url && $tag_name ) {
-			$url = sprintf(
-				'https://github.com/%1$s/%2$s/releases/download/%3$s/%2$s.zip',
-				$this->user_name,
-				$this->repository,
-				$tag_name
-			);
-
-			$http_status_code = $this->_get_http_status_code( $url );
-			if ( ! $url || ! in_array( $http_status_code, [ 200, 302 ] ) ) {
-				$url = sprintf(
-					'https://github.com/%1$s/%2$s/archive/%3$s.zip',
-					$this->user_name,
-					$this->repository,
-					$tag_name
-				);
-			}
-		}
-
-		return apply_filters(
-			sprintf(
-				'inc2734_github_theme_updater_zip_url_%1$s/%2$s',
-				$this->user_name,
-				$this->repository
-			),
-			$url,
-			$this->user_name,
-			$this->repository,
-			$tag_name
-		);
-	}
-
-	/**
-	 * Return the data from the Transient API or GitHub API.
-	 *
-	 * @return object|WP_Error
-	 */
-	protected function _get_transient_api_data() {
-		$transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
-		$transient = get_transient( $transient_name );
-
-		if ( false !== $transient ) {
-			return $transient;
-		}
-
-		$api_data = $this->_get_github_api_data();
-		set_transient( $transient_name, $api_data, 60 * 5 );
-		return $api_data;
-	}
-
-	/**
-	 * Return the data from the GitHub API.
-	 *
-	 * @return object|WP_Error
-	 */
-	protected function _get_github_api_data() {
-		$response = $this->_request_github_api();
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
-
-		$response_code = wp_remote_retrieve_response_code( $response );
-		if ( '' === $response_code ) {
-			return null;
-		}
-
-		$body = json_decode( wp_remote_retrieve_body( $response ) );
-		if ( 200 == $response_code ) {
-			return $body;
-		}
-
-		$message = null !== $body && property_exists( $body, 'message' )
-			? $body->message
-			: __( 'No response.', 'inc2734-wp-github-theme-updater' );
-
-		return new WP_Error(
-			$response_code,
-			'Inc2734_WP_GitHub_Theme_Updater error. ' . $message
-		);
-	}
-
-	/**
-	 * Get request to GitHub API
-	 *
-	 * @return json|WP_Error
-	 */
-	protected function _request_github_api() {
-		global $wp_version;
-
-		$url = sprintf(
-			'https://api.github.com/repos/%1$s/%2$s/releases/latest',
-			$this->user_name,
-			$this->repository
-		);
-
-		return wp_remote_get(
-			apply_filters(
-				sprintf(
-					'inc2734_github_theme_updater_request_url_%1$s/%2$s',
-					$this->user_name,
-					$this->repository
-				),
-				$url,
-				$this->user_name,
-				$this->repository
-			),
-			[
-				'user-agent' => 'WordPress/' . $wp_version,
-				'timeout'    => 30,
-				'headers'    => [
-					'Accept-Encoding' => '',
-				],
-			]
-		);
 	}
 
 	/**
@@ -311,28 +195,5 @@ class Bootstrap {
 			$this->_sanitize_version( $remote_version ),
 			'<'
 		);
-	}
-
-	/**
-	 * Return http status code from $url
-	 *
-	 * @param string $url
-	 * @return int
-	 */
-	protected function _get_http_status_code( $url ) {
-		global $wp_version;
-
-		$response = wp_remote_head(
-			$url,
-			[
-				'user-agent' => 'WordPress/' . $wp_version,
-				'timeout'    => 30,
-				'headers'    => [
-					'Accept-Encoding' => '',
-				],
-			]
-		);
-
-		return wp_remote_retrieve_response_code( $response );
 	}
 }
