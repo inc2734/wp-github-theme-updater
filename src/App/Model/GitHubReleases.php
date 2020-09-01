@@ -56,8 +56,7 @@ class GitHubReleases {
 
 		$body = json_decode( wp_remote_retrieve_body( $response ) );
 		if ( 200 == $response_code ) {
-			$package = $this->_get_zip_url( $body );
-			$body->package = $package;
+			$body->package = $body->tag_name ? $this->_get_zip_url( $body ) : false;
 			return $body;
 		}
 
@@ -135,6 +134,18 @@ class GitHubReleases {
 			}
 		}
 
+		$url = apply_filters(
+			sprintf(
+				'inc2734_github_theme_updater_zip_url_%1$s/%2$s',
+				$this->user_name,
+				$this->repository
+			),
+			$url,
+			$this->user_name,
+			$this->repository,
+			$tag_name
+		);
+
 		if ( ! $url ) {
 			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found.' );
 			return false;
@@ -146,17 +157,7 @@ class GitHubReleases {
 			return false;
 		}
 
-		return apply_filters(
-			sprintf(
-				'inc2734_github_theme_updater_zip_url_%1$s/%2$s',
-				$this->user_name,
-				$this->repository
-			),
-			$url,
-			$this->user_name,
-			$this->repository,
-			$tag_name
-		);
+		return $url;
 	}
 
 	/**

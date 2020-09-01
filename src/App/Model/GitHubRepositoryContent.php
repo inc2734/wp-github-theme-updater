@@ -48,17 +48,20 @@ class GitHubRepositoryContent {
 	 * @see https://developer.wordpress.org/reference/functions/wp_get_theme/
 	 */
 	public function get_headers() {
-		$content = $this->get();
-		$content = substr( $content, 0, 8 * KB_IN_BYTES );
-		$content = str_replace( "\r", "\n", $content );
-
 		$headers = [];
+
+		$content = $this->get();
 
 		$target_headers = array(
 			'RequiresWP'   => 'Requires at least',
 			'RequiresPHP'  => 'Requires PHP',
 			'Tested up to' => 'Tested up to',
 		);
+
+		if ( null !== $content ) {
+			$content = substr( $content, 0, 8 * KB_IN_BYTES );
+			$content = str_replace( "\r", "\n", $content );
+		}
 
 		foreach ( $target_headers as $field => $regex ) {
 			if ( preg_match( '/^[ \t\/*#@]*' . preg_quote( $regex, '/' ) . ':(.*)$/mi', $content, $match ) && $match[1] ) {
@@ -68,7 +71,14 @@ class GitHubRepositoryContent {
 			}
 		}
 
-		return $headers;
+		return apply_filters(
+			sprintf(
+				'inc2734_github_theme_updater_repository_content_headers_%1$s/%2$s',
+				$this->user_name,
+				$this->repository
+			),
+			$headers
+		);
 	}
 
 	protected function _retrieve( $response ) {
@@ -97,6 +107,18 @@ class GitHubRepositoryContent {
 			$this->user_name,
 			$this->repository,
 			preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css'
+		);
+
+		$url = apply_filters(
+			sprintf(
+				'inc2734_github_theme_updater_repository_content_url_%1$s/%2$s',
+				$this->user_name,
+				$this->repository
+			),
+			$url,
+			$this->user_name,
+			$this->repository,
+			$this->theme_name
 		);
 
 		return Requester::request( $url );

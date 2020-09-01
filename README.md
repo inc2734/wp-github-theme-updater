@@ -12,28 +12,17 @@ $ composer require inc2734/wp-github-theme-updater
 ## How to use
 ```
 <?php
-// When Using composer auto loader
-$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( get_template(), 'user-name', 'repository' );
-```
-
-## Filter hooks
-
-### inc2734_github_theme_updater_transient_response_<$user_name>/<$repository>
-
-Customize transient response
-
-```
-add_filter(
-  'inc2734_github_theme_updater_transient_response_inc2734/snow-monkey',
-  function( $transient_response ) {
-    return $transient_response;
-  }
+$updater = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap(
+  get_template(),
+  'user-name',
+  'repository'
 );
 ```
 
+## Filter hooks
 ### inc2734_github_theme_updater_zip_url_<$user_name>/<$repository>
 
-Customize downloaded api url.
+Customize downloaded package url.
 
 ```
 add_filter(
@@ -58,6 +47,47 @@ add_filter(
   },
   10,
   3
+);
+```
+
+### inc2734_github_theme_updater_transient_response_<$user_name>/<$repository>
+
+Customize transient response
+
+```
+add_filter(
+  'inc2734_github_theme_updater_transient_response_inc2734/snow-monkey',
+  function( $transient_response ) {
+    return $transient_response;
+  }
+);
+```
+
+### inc2734_github_theme_updater_repository_content_url_<$user_name>/<$repository>
+
+Customize contents api url.
+
+```
+add_filter(
+  'inc2734_github_theme_updater_repository_content_url_inc2734/snow-monkey',
+  function( $url, $user_name, $repository, $theme_name ) {
+    return $url;
+  },
+  10,
+  4
+);
+```
+
+### inc2734_github_theme_updater_repository_content_headers_<$user_name>/<$repository>
+
+Customize fields contents_api.
+
+```
+add_filter(
+  'inc2734_github_theme_updater_repository_content_headers_inc2734/snow-monkey',
+  function( $headers ) {
+    return $headers;
+  }
 );
 ```
 
