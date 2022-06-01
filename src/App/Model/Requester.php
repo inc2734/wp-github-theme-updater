@@ -9,6 +9,12 @@ namespace Inc2734\WP_GitHub_Theme_Updater\App\Model;
 
 class Requester {
 
+	/**
+	 * Request.
+	 *
+	 * @param string $url A url of the request destination.
+	 * @return array|WP_Error
+	 */
 	public static function request( $url ) {
 		global $wp_version;
 

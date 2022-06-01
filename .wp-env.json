@@ -1,0 +1,9 @@
+{
+  "core": null,
+  "mappings": {
+    "wp-content/plugins/wp-github-theme-updater": "./"
+  },
+  "config": {
+    "WP_DEBUG": true
+  }
+}

@@ -11,21 +11,53 @@ use Inc2734\WP_GitHub_Theme_Updater\App\Model\Requester;
 
 class GitHubRepositoryContent {
 
+	/**
+	 * Theme name.
+	 *
+	 * @var string
+	 */
 	protected $theme_name;
 
+	/**
+	 * User name.
+	 *
+	 * @var string
+	 */
 	protected $user_name;
 
+	/**
+	 * Repository.
+	 *
+	 * @var string
+	 */
 	protected $repository;
 
+	/**
+	 * Transient name.
+	 *
+	 * @var string
+	 */
 	protected $transient_name;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param string $theme_name Theme name.
+	 * @param string $user_name  User name.
+	 * @param string $repository Repository.
+	 */
 	public function __construct( $theme_name, $user_name, $repository ) {
-		$this->theme_name  = $theme_name;
-		$this->user_name   = $user_name;
-		$this->repository  = $repository;
+		$this->theme_name     = $theme_name;
+		$this->user_name      = $user_name;
+		$this->repository     = $repository;
 		$this->transient_name = sprintf( 'wp_github_theme_updater_repository_data_%1$s', $this->theme_name );
 	}
 
+	/**
+	 * Get GitHub repository content.
+	 *
+	 * @return string
+	 */
 	public function get() {
 		$transient = get_transient( $this->transient_name );
 		if ( false !== $transient ) {
@@ -39,13 +71,20 @@ class GitHubRepositoryContent {
 		return $response;
 	}
 
+	/**
+	 * Delete transient.
+	 */
 	public function delete_transient() {
 		delete_transient( $this->transient_name );
 	}
 
 	/**
+	 * Get HTTP headers.
+	 *
 	 * @see https://developer.wordpress.org/reference/functions/get_file_data/
 	 * @see https://developer.wordpress.org/reference/functions/wp_get_theme/
+	 *
+	 * @return array
 	 */
 	public function get_headers() {
 		$headers = [];
@@ -71,6 +110,7 @@ class GitHubRepositoryContent {
 			}
 		}
 
+		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		return apply_filters(
 			sprintf(
 				'inc2734_github_theme_updater_repository_content_headers_%1$s/%2$s',
@@ -79,8 +119,15 @@ class GitHubRepositoryContent {
 			),
 			$headers
 		);
+		// phpcs:enable
 	}
 
+	/**
+	 * Retrieve.
+	 *
+	 * @param array|WP_Error $response HTTP response.
+	 * @return string
+	 */
 	protected function _retrieve( $response ) {
 		if ( is_wp_error( $response ) ) {
 			return null;
@@ -99,6 +146,11 @@ class GitHubRepositoryContent {
 		return base64_decode( $body->content );
 	}
 
+	/**
+	 * Requesst.
+	 *
+	 * @return array|WP_Error
+	 */
 	protected function _request() {
 		$current = wp_get_theme( $this->theme_name );
 
@@ -109,6 +161,7 @@ class GitHubRepositoryContent {
 			preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css'
 		);
 
+		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$url = apply_filters(
 			sprintf(
 				'inc2734_github_theme_updater_repository_content_url_%1$s/%2$s',
@@ -120,6 +173,7 @@ class GitHubRepositoryContent {
 			$this->repository,
 			$this->theme_name
 		);
+		// phpcs:enable
 
 		return Requester::request( $url );
 	}

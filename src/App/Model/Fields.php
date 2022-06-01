@@ -21,16 +21,16 @@ class Fields {
 
 	/**
 	 * Whether to return the theme readme sections: description, installation,
-   * FAQ, screenshots, other notes, and changelog.
-   *
+	 * FAQ, screenshots, other notes, and changelog.
+	 *
 	 * @var array|boolean
-	 *   @var string description
-	 *   @var string installation
-	 *   @var string faq
-	 *   @var string screenshots
-	 *   @var string changelog
-	 *   @var string reviews
-	 *   @var string other_notes
+	 *   | string description
+	 *   | string installation
+	 *   | string faq
+	 *   | string screenshots
+	 *   | string changelog
+	 *   | string reviews
+	 *   | string other_notes
 	 */
 	public $sections = false;
 
@@ -147,7 +147,9 @@ class Fields {
 	public $extended_author = false;
 
 	/**
-	 * @param array $fields
+	 * Constructor.
+	 *
+	 * @param array $fields Fields.
 	 */
 	public function __construct( array $fields ) {
 		foreach ( $fields as $field => $value ) {
@@ -158,9 +160,9 @@ class Fields {
 	}
 
 	/**
-	 * Return specific property
+	 * Return specific property.
 	 *
-	 * @param string $field
+	 * @param string $field Field.
 	 * @return mixed
 	 */
 	public function get( $field ) {

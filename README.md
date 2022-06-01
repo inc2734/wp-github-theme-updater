@@ -1,6 +1,6 @@
 # WP GitHub Theme Updater
 
-[![Build Status](https://travis-ci.com/inc2734/wp-github-theme-updater.svg?branch=master)](https://travis-ci.com/inc2734/wp-github-theme-updater)
+![CI](https://github.com/inc2734/wp-github-theme-updater/workflows/CI/badge.svg)
 [![Latest Stable Version](https://poser.pugx.org/inc2734/wp-github-theme-updater/v/stable)](https://packagist.org/packages/inc2734/wp-github-theme-updater)
 [![License](https://poser.pugx.org/inc2734/wp-github-theme-updater/license)](https://packagist.org/packages/inc2734/wp-github-theme-updater)
 

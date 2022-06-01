@@ -54,10 +54,12 @@ class Bootstrap {
 	protected $github_repository_content;
 
 	/**
-	 * @param string $theme_name
-	 * @param string $user_name
-	 * @param string $repository
-	 * @param array $fields Theme data fields
+	 * Constructor.
+	 *
+	 * @param string $theme_name Theme name.
+	 * @param string $user_name User name.
+	 * @param string $repository Repository.
+	 * @param array  $fields Theme data fields.
 	 */
 	public function __construct( $theme_name, $user_name, $repository, array $fields = [] ) {
 		$this->theme_name = $theme_name;
@@ -67,8 +69,8 @@ class Bootstrap {
 
 		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
 
-		$upgrader = new App\Model\Upgrader( $theme_name );
-		$this->github_releases = new GitHubReleases( $theme_name, $user_name, $repository );
+		$upgrader                        = new App\Model\Upgrader( $theme_name );
+		$this->github_releases           = new GitHubReleases( $theme_name, $user_name, $repository );
 		$this->github_repository_content = new GitHubRepositoryContent( $theme_name, $user_name, $repository );
 
 		add_filter( 'pre_set_site_transient_update_themes', [ $this, '_pre_set_site_transient_update_themes' ] );
@@ -78,11 +80,11 @@ class Bootstrap {
 	}
 
 	/**
-	 * Overwrite site_transient_update_themes from GitHub API
+	 * Overwrite site_transient_update_themes from GitHub API.
 	 *
 	 * @see https://make.wordpress.org/core/2020/07/30/recommended-usage-of-the-updates-api-to-support-the-auto-updates-ui-for-plugins-and-themes-in-wordpress-5-5/
 	 *
-	 * @param false|array $transient
+	 * @param false|array $transient New value of site transient.
 	 * @return false|array
 	 */
 	public function _pre_set_site_transient_update_themes( $transient ) {
@@ -111,6 +113,7 @@ class Bootstrap {
 			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $remote['RequiresPHP'],
 		];
 
+		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$update = apply_filters(
 			sprintf(
 				'inc2734_github_theme_updater_transient_response_%1$s/%2$s',
@@ -119,17 +122,18 @@ class Bootstrap {
 			),
 			$update
 		);
+		// phpcs:enable
 
 		$current = wp_get_theme( $this->theme_name );
 		if ( ! $this->_should_update( $current['Version'], $response->tag_name ) ) {
 			if ( false === $transient ) {
-				$transient = new stdClass();
+				$transient            = new stdClass();
 				$transient->no_update = [];
 			}
 			$transient->no_update[ $this->theme_name ] = $update;
 		} else {
 			if ( false === $transient ) {
-				$transient = new stdClass();
+				$transient           = new stdClass();
 				$transient->response = [];
 			}
 			$transient->response[ $this->theme_name ] = $update;
@@ -141,8 +145,8 @@ class Bootstrap {
 	/**
 	 * Fires when the upgrader process is complete.
 	 *
-	 * @param WP_Upgrader $upgrader_object
-	 * @param array $hook_extra
+	 * @param WP_Upgrader $upgrader_object WP_Upgrader instance. In other contexts this might be a Theme_Upgrader, Plugin_Upgrader, Core_Upgrade, or Language_Pack_Upgrader instance.
+	 * @param array       $hook_extra Array of bulk item update data.
 	 */
 	public function _upgrader_process_complete( $upgrader_object, $hook_extra ) {
 		if ( 'update' === $hook_extra['action'] && 'theme' === $hook_extra['type'] ) {
@@ -159,10 +163,9 @@ class Bootstrap {
 	 * If theme position is themes/my-theme/sub-dir/style.css, don't re-activate the theme.
 	 * So, I hooked switch_theme hook point and re-activate the theme.
 	 *
-	 * @param string $new_name Theme slug (NOT INCLUDING SUB DIRECTORY !) or Theme name.
-	 * @param WP_Theme $new_theme
-	 * @param WP_Theme $old_theme
-	 * @return void
+	 * @param string   $new_name Theme slug (NOT INCLUDING SUB DIRECTORY !) or Theme name.
+	 * @param WP_Theme $new_theme New WP_Theme object.
+	 * @param WP_Theme $old_theme Old WP_Theme object.
 	 */
 	public function _re_activate( $new_name, $new_theme, $old_theme ) {
 		remove_action( 'switch_theme', [ $this, '_re_activate' ], 10 );
@@ -172,9 +175,9 @@ class Bootstrap {
 	}
 
 	/**
-	 * Sanitize version
+	 * Sanitize version.
 	 *
-	 * @param string $version
+	 * @param string $version Version.
 	 * @return string
 	 */
 	protected function _sanitize_version( $version ) {
@@ -183,10 +186,10 @@ class Bootstrap {
 	}
 
 	/**
-	 * If remote version is newer, return true
+	 * If remote version is newer, return true.
 	 *
-	 * @param string $current_version
-	 * @param string $remote_version
+	 * @param string $current_version Current version.
+	 * @param string $remote_version Remove version.
 	 * @return bool
 	 */
 	protected function _should_update( $current_version, $remote_version ) {

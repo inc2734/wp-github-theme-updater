@@ -6,7 +6,8 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 	public function __construct() {
 		parent::__construct();
 
-		$this->_upgrade_dir = untrailingslashit( WP_CONTENT_DIR ) . '/upgrade';
+		$this->_upgrade_dir = untrailingslashit( sys_get_temp_dir() ) . '/upgrade';
+		$this->_theme_root  = untrailingslashit( sys_get_temp_dir() ) . '/themes';
 	}
 
 	public function setup() {
@@ -23,6 +24,12 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		if ( ! file_exists( $this->_upgrade_dir ) ) {
 			mkdir( $this->_upgrade_dir );
 		}
+
+		if ( ! file_exists( $this->_theme_root ) ) {
+			mkdir( $this->_theme_root );
+			mkdir( $this->_theme_root . '/twentyseventeen' );
+		}
+		add_filter( 'theme_root', [ $this, '_set_theme_root' ] );
 	}
 
 	public function tearDown() {
@@ -31,6 +38,15 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		if ( file_exists( $this->_upgrade_dir ) ) {
 			system( 'rm -rf ' . $this->_upgrade_dir );
 		}
+
+		if ( file_exists( $this->_theme_root ) ) {
+			system( 'rm -rf ' . $this->_theme_root );
+		}
+		remove_filter( 'theme_root', [ $this, '_set_theme_root' ] );
+	}
+
+	public function _set_theme_root() {
+		return $this->_theme_root;
 	}
 
 	/**
@@ -45,7 +61,7 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 				'theme'        => 'twentyseventeen',
 				'new_version'  => '1000000',
 				'url'          => false,
-				'package'      => 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip',
+				'package'      => 'https://github.com/inc2734/dummy-twentyseventeen/releases/download/1000000/dummy-twentyseventeen-1000000.zip',
 				'requires'     => '5.5',
 				'requires_php' => '5.6',
 				'tested'       => '',
@@ -76,10 +92,10 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$result = $upgrader->pre_install( true, [ 'theme' => 'twentyseventeen' ] );
 		$this->assertTrue( $result );
 
-		rename( WP_CONTENT_DIR . '/themes/twentyseventeen', WP_CONTENT_DIR . '/themes/twentyseventeen-org' );
+		rename( get_theme_root() . '/twentyseventeen', get_theme_root() . '/twentyseventeen-org' );
 		$result = $upgrader->pre_install( true, [ 'theme' => 'twentyseventeen' ] );
 		$this->assertTrue( is_wp_error( $result ) );
-		rename( WP_CONTENT_DIR . '/themes/twentyseventeen-org', WP_CONTENT_DIR . '/themes/twentyseventeen' );
+		rename( get_theme_root() . '/twentyseventeen-org', get_theme_root() . '/twentyseventeen' );
 	}
 
 	/**
@@ -87,51 +103,25 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 	 */
 	public function upgrader_source_selection() {
 		mkdir( $this->_upgrade_dir . '/twentyseventeen-xxx' );
+		mkdir( $this->_upgrade_dir . '/twentyseventeen-xxx/twentyseventeen2' );
 
 		$updater  = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' );
 		$upgrader = new Inc2734\WP_GitHub_Theme_Updater\App\Model\Upgrader( 'twentyseventeen' );
 
 		$newsource = $upgrader->source_selection(
-			$this->_upgrade_dir . '/twentyseventeen-xxx',
-			$this->_upgrade_dir . '/twentyseventeen-xxx',
-			false,
-			[ 'theme' => 'twentysixteen' ]
-		);
-		$this->assertEquals( $this->_upgrade_dir . '/twentyseventeen-xxx', $newsource );
-
-		$newsource = $upgrader->source_selection(
-			$this->_upgrade_dir . '/twentyseventeen-xxx',
+			$this->_upgrade_dir . '/twentyseventeen-xxx/twentyseventeen2',
 			$this->_upgrade_dir . '/twentyseventeen-xxx',
 			false,
 			[ 'theme' => 'twentyseventeen' ]
 		);
-		$this->assertEquals( $this->_upgrade_dir . '/twentyseventeen/', $newsource );
-	}
-
-	/**
-	 * @test
-	 */
-	public function upgrader_source_selection__subdir() {
-		mkdir( $this->_upgrade_dir . '/foo' );
-		mkdir( $this->_upgrade_dir . '/foo/resources-xxx' );
-
-		$updater  = new Inc2734\WP_GitHub_Theme_Updater\Bootstrap( 'foo/resources', 'inc2734', 'dummy-twentyseventeen' );
-		$upgrader = new Inc2734\WP_GitHub_Theme_Updater\App\Model\Upgrader( 'foo/resources' );
+		$this->assertEquals( $this->_upgrade_dir . '/twentyseventeen-xxx/twentyseventeen', $newsource );
 
 		$newsource = $upgrader->source_selection(
-			$this->_upgrade_dir . '/foo/resources-xxx',
-			$this->_upgrade_dir . '/foo/resources-xxx',
+			$this->_upgrade_dir . '/twentyseventeen-xxx/twentyseventeen',
+			$this->_upgrade_dir . '/twentyseventeen-xxx',
 			false,
-			[ 'theme' => 'twentysixteen' ]
+			[ 'theme' => 'twentyseventeen' ]
 		);
-		$this->assertEquals( $this->_upgrade_dir . '/foo/resources-xxx', $newsource );
-
-		$newsource = $upgrader->source_selection(
-			$this->_upgrade_dir . '/foo/resources-xxx',
-			$this->_upgrade_dir . '/foo/resources-xxx',
-			false,
-			[ 'theme' => 'foo/resources' ]
-		);
-		$this->assertEquals( $this->_upgrade_dir . '/foo/resources/', $newsource );
+		$this->assertEquals( $this->_upgrade_dir . '/twentyseventeen-xxx/twentyseventeen', $newsource );
 	}
 }

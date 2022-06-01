@@ -12,38 +12,82 @@ use Inc2734\WP_GitHub_Theme_Updater\App\Model\Requester;
 
 class GitHubReleases {
 
+	/**
+	 * Theme name.
+	 *
+	 * @var string
+	 */
 	protected $theme_name;
 
+	/**
+	 * User name.
+	 *
+	 * @var string
+	 */
 	protected $user_name;
 
+	/**
+	 * Repository.
+	 *
+	 * @var string
+	 */
 	protected $repository;
 
+	/**
+	 * Transient name.
+	 *
+	 * @var string
+	 */
 	protected $transient_name;
 
+	/**
+	 * Constructor.
+	 *
+	 * @param string $theme_name Theme name.
+	 * @param string $user_name  User name.
+	 * @param string $repository Repository.
+	 */
 	public function __construct( $theme_name, $user_name, $repository ) {
-		$this->theme_name  = $theme_name;
-		$this->user_name   = $user_name;
-		$this->repository  = $repository;
+		$this->theme_name     = $theme_name;
+		$this->user_name      = $user_name;
+		$this->repository     = $repository;
 		$this->transient_name = sprintf( 'wp_github_theme_updater_%1$s', $this->theme_name );
 	}
 
-	public function get() {
-		$transient = get_transient( $this->transient_name );
+	/**
+	 * Get response of GitHub API.
+	 *
+	 * @param string|null $version Version.
+	 * @return array|WP_Error
+	 */
+	public function get( $version = null ) {
+		$transient = ! $version
+			? get_transient( $this->transient_name . '_' . $version )
+			: get_transient( $this->transient_name );
 		if ( false !== $transient ) {
 			return $transient;
 		}
 
-		$response = $this->_request();
+		$response = $this->_request( $version );
 		$response = $this->_retrieve( $response );
 
 		set_transient( $this->transient_name, $response, 60 * 5 );
 		return $response;
 	}
 
+	/**
+	 * Delete transient.
+	 */
 	public function delete_transient() {
 		delete_transient( $this->transient_name );
 	}
 
+	/**
+	 * Retrive.
+	 *
+	 * @param array|WP_Error $response HTTP response.
+	 * @return array|WP_Error
+	 */
 	protected function _retrieve( $response ) {
 		if ( is_wp_error( $response ) ) {
 			return $response;
@@ -55,7 +99,7 @@ class GitHubReleases {
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ) );
-		if ( 200 == $response_code ) {
+		if ( 200 === (int) $response_code ) {
 			$body->package = $body->tag_name ? $this->_get_zip_url( $body ) : false;
 			return $body;
 		}
@@ -81,13 +125,27 @@ class GitHubReleases {
 		);
 	}
 
-	protected function _request() {
-		$url = sprintf(
-			'https://api.github.com/repos/%1$s/%2$s/releases/latest',
-			$this->user_name,
-			$this->repository
-		);
+	/**
+	 * Request.
+	 *
+	 * @param string|null $version Version.
+	 * @return array|WP_Error
+	 */
+	protected function _request( $version = null ) {
+		$url = ! $version
+			? sprintf(
+				'https://api.github.com/repos/%1$s/%2$s/releases/latest',
+				$this->user_name,
+				$this->repository
+			)
+			: sprintf(
+				'https://api.github.com/repos/%1$s/%2$s/releases/tags/%3$s',
+				$this->user_name,
+				$this->repository,
+				$version
+			);
 
+		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$url = apply_filters(
 			sprintf(
 				'inc2734_github_theme_updater_request_url_%1$s/%2$s',
@@ -96,12 +154,20 @@ class GitHubReleases {
 			),
 			$url,
 			$this->user_name,
-			$this->repository
+			$this->repository,
+			$version
 		);
+		// phpcs:enable
 
 		return Requester::request( $url );
 	}
 
+	/**
+	 * Get remote zip URL.
+	 *
+	 * @param stdClass $response Responser of GitHub API.
+	 * @return string|false
+	 */
 	protected function _get_zip_url( $response ) {
 		$url = false;
 
@@ -123,17 +189,18 @@ class GitHubReleases {
 				$tag_name
 			);
 
-			$http_status_code = $this->_get_http_status_code( $url );
-			if ( ! in_array( $http_status_code, [ 200, 302 ] ) ) {
-				$url = sprintf(
-					'https://github.com/%1$s/%2$s/archive/%3$s.zip',
-					$this->user_name,
-					$this->repository,
-					$tag_name
-				);
-			}
+			// $http_status_code = $this->_get_http_status_code( $url );
+			// if ( ! in_array( $http_status_code, [ 200, 302 ] ) ) {
+			// $url = sprintf(
+			// 'https://github.com/%1$s/%2$s/archive/%3$s.zip',
+			// $this->user_name,
+			// $this->repository,
+			// $tag_name
+			// );
+			// }
 		}
 
+		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$url = apply_filters(
 			sprintf(
 				'inc2734_github_theme_updater_zip_url_%1$s/%2$s',
@@ -145,6 +212,7 @@ class GitHubReleases {
 			$this->repository,
 			$tag_name
 		);
+		// phpcs:enable
 
 		if ( ! $url ) {
 			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found.' );
@@ -152,7 +220,7 @@ class GitHubReleases {
 		}
 
 		$http_status_code = $this->_get_http_status_code( $url );
-		if ( ! in_array( $http_status_code, [ 200, 302 ] ) ) {
+		if ( ! in_array( (int) $http_status_code, [ 200, 302 ], true ) ) {
 			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $url );
 			return false;
 		}
@@ -161,9 +229,9 @@ class GitHubReleases {
 	}
 
 	/**
-	 * Return http status code from $url
+	 * Return http status code from $url.
 	 *
-	 * @param string $url
+	 * @param string $url URL.
 	 * @return int
 	 */
 	protected function _get_http_status_code( $url ) {
