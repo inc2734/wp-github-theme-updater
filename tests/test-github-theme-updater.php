@@ -10,8 +10,8 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$this->_theme_root  = untrailingslashit( sys_get_temp_dir() ) . '/themes';
 	}
 
-	public function setup() {
-		parent::setup();
+	public function set_up() {
+		parent::set_up();
 
 		global $wp_filesystem;
 
@@ -32,8 +32,8 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		add_filter( 'theme_root', [ $this, '_set_theme_root' ] );
 	}
 
-	public function tearDown() {
-		parent::tearDown();
+	public function tear_down() {
+		parent::tear_down();
 
 		if ( file_exists( $this->_upgrade_dir ) ) {
 			system( 'rm -rf ' . $this->_upgrade_dir );
