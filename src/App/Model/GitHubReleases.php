@@ -116,7 +116,7 @@ class GitHubReleases {
 		);
 
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. [' . $response_code . '] ' . $error_message );
+			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. [' . $response_code . '] ' . $error_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 		}
 
 		return new WP_Error(
@@ -188,16 +188,6 @@ class GitHubReleases {
 				$this->repository,
 				$tag_name
 			);
-
-			// $http_status_code = $this->_get_http_status_code( $url );
-			// if ( ! in_array( $http_status_code, [ 200, 302 ] ) ) {
-			// $url = sprintf(
-			// 'https://github.com/%1$s/%2$s/archive/%3$s.zip',
-			// $this->user_name,
-			// $this->repository,
-			// $tag_name
-			// );
-			// }
 		}
 
 		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
@@ -215,13 +205,13 @@ class GitHubReleases {
 		// phpcs:enable
 
 		if ( ! $url ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found.' );
+			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return false;
 		}
 
 		$http_status_code = $this->_get_http_status_code( $url );
-		if ( ! in_array( (int) $http_status_code, [ 200, 302 ], true ) ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $url );
+		if ( ! in_array( (int) $http_status_code, array( 200, 302 ), true ) ) {
+			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $url ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return false;
 		}
 

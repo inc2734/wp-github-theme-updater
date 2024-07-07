@@ -26,11 +26,11 @@ class GitHub_Plugin_Updater_Release_Test extends WP_UnitTestCase {
 		add_filter(
 			'inc2734_github_theme_updater_zip_url_inc2734/dummy-twentyseventeen',
 			function( $url ) {
-				return 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip?v=1';
+				return 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000001.zip?v=1';
 			}
 		);
 
 		$response = $github_releases->get();
-		$this->assertEquals( 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000000.zip?v=1', $response->package );
+		$this->assertEquals( 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000001.zip?v=1', $response->package );
 	}
 }

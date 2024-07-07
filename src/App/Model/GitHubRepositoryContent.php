@@ -33,6 +33,13 @@ class GitHubRepositoryContent {
 	protected $repository;
 
 	/**
+	 * Version.
+	 *
+	 * @var int|null
+	 */
+	protected $version;
+
+	/**
 	 * Transient name.
 	 *
 	 * @var string
@@ -45,12 +52,16 @@ class GitHubRepositoryContent {
 	 * @param string $theme_name Theme name.
 	 * @param string $user_name  User name.
 	 * @param string $repository Repository.
+	 * @param int|null $version Version.
 	 */
-	public function __construct( $theme_name, $user_name, $repository ) {
+	public function __construct( $theme_name, $user_name, $repository, $version = null ) {
 		$this->theme_name     = $theme_name;
 		$this->user_name      = $user_name;
 		$this->repository     = $repository;
-		$this->transient_name = sprintf( 'wp_github_theme_updater_repository_data_%1$s', $this->theme_name );
+		$this->version        = $version;
+		$this->transient_name = ! $this->version
+			? sprintf( 'wp_github_theme_updater_repository_data_%1$s', $this->theme_name )
+			: sprintf( 'wp_github_theme_updater_repository_data_%1$s_%2$s', $this->theme_name, $this->version );
 	}
 
 	/**
@@ -67,7 +78,7 @@ class GitHubRepositoryContent {
 		$response = $this->_request();
 		$response = $this->_retrieve( $response );
 
-		set_transient( $this->transient_name, $response, 0 );
+		set_transient( $this->transient_name, $response, 60 * 60 );
 		return $response;
 	}
 
@@ -87,7 +98,7 @@ class GitHubRepositoryContent {
 	 * @return array
 	 */
 	public function get_headers() {
-		$headers = [];
+		$headers = array();
 
 		$content = $this->get();
 
@@ -117,7 +128,8 @@ class GitHubRepositoryContent {
 				$this->user_name,
 				$this->repository
 			),
-			$headers
+			$headers,
+			$this->version
 		);
 		// phpcs:enable
 	}
@@ -143,7 +155,7 @@ class GitHubRepositoryContent {
 			return null;
 		}
 
-		return base64_decode( $body->content );
+		return base64_decode( $body->content ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 	}
 
 	/**
@@ -154,12 +166,20 @@ class GitHubRepositoryContent {
 	protected function _request() {
 		$current = wp_get_theme( $this->theme_name );
 
-		$url = sprintf(
-			'https://api.github.com/repos/%1$s/%2$s/contents/%3$s',
-			$this->user_name,
-			$this->repository,
-			preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css'
-		);
+		$url = ! $this->version
+			? sprintf(
+				'https://api.github.com/repos/%1$s/%2$s/contents/%3$s',
+				$this->user_name,
+				$this->repository,
+				preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css'
+			)
+			: sprintf(
+				'https://api.github.com/repos/%1$s/%2$s/contents/%3$s?ref=%4$s',
+				$this->user_name,
+				$this->repository,
+				preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css',
+				$this->version
+			);
 
 		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$url = apply_filters(
@@ -171,7 +191,8 @@ class GitHubRepositoryContent {
 			$url,
 			$this->user_name,
 			$this->repository,
-			$this->theme_name
+			$this->theme_name,
+			$this->version
 		);
 		// phpcs:enable
 

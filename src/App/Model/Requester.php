@@ -20,13 +20,13 @@ class Requester {
 
 		return wp_remote_get(
 			$url,
-			[
+			array(
 				'user-agent' => 'WordPress/' . $wp_version,
 				'timeout'    => 30,
-				'headers'    => [
+				'headers'    => array(
 					'Accept-Encoding' => '',
-				],
-			]
+				),
+			)
 		);
 	}
 }

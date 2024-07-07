@@ -34,7 +34,7 @@ class Upgrader {
 	 * @param array         $hook_extra Extra arguments passed to hooked filters.
 	 * @return bool|WP_Error.
 	 */
-	public function pre_install( $bool, $hook_extra ) {
+	public function pre_install( $bool, $hook_extra ) { // phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.boolFound
 		if ( ! isset( $hook_extra['theme'] ) || $this->theme_name !== $hook_extra['theme'] ) {
 			return $bool;
 		}
@@ -67,7 +67,7 @@ class Upgrader {
 
 		$slash_count = substr_count( $this->theme_name, '/' );
 		if ( $slash_count ) {
-			add_action( 'switch_theme', [ $this, '_re_activate' ], 10, 3 );
+			add_action( 'switch_theme', array( $this, '_re_activate' ), 10, 3 );
 		}
 
 		$subdir_name = untrailingslashit( str_replace( trailingslashit( $remote_source ), '', $source ) );

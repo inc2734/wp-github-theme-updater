@@ -61,7 +61,7 @@ class Bootstrap {
 	 * @param string $repository Repository.
 	 * @param array  $fields Theme data fields.
 	 */
-	public function __construct( $theme_name, $user_name, $repository, array $fields = [] ) {
+	public function __construct( $theme_name, $user_name, $repository, array $fields = array() ) {
 		$this->theme_name = $theme_name;
 		$this->user_name  = $user_name;
 		$this->repository = $repository;
@@ -69,14 +69,13 @@ class Bootstrap {
 
 		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
 
-		$upgrader                        = new App\Model\Upgrader( $theme_name );
-		$this->github_releases           = new GitHubReleases( $theme_name, $user_name, $repository );
-		$this->github_repository_content = new GitHubRepositoryContent( $theme_name, $user_name, $repository );
+		$upgrader              = new App\Model\Upgrader( $theme_name );
+		$this->github_releases = new GitHubReleases( $theme_name, $user_name, $repository );
 
-		add_filter( 'pre_set_site_transient_update_themes', [ $this, '_pre_set_site_transient_update_themes' ] );
-		add_filter( 'upgrader_pre_install', [ $upgrader, 'pre_install' ], 10, 2 );
-		add_filter( 'upgrader_source_selection', [ $upgrader, 'source_selection' ], 10, 4 );
-		add_action( 'upgrader_process_complete', [ $this, '_upgrader_process_complete' ], 10, 2 );
+		add_filter( 'pre_set_site_transient_update_themes', array( $this, '_pre_set_site_transient_update_themes' ) );
+		add_filter( 'upgrader_pre_install', array( $upgrader, 'pre_install' ), 10, 2 );
+		add_filter( 'upgrader_source_selection', array( $upgrader, 'source_selection' ), 10, 4 );
+		add_action( 'upgrader_process_complete', array( $this, '_upgrader_process_complete' ), 10, 2 );
 	}
 
 	/**
@@ -90,7 +89,7 @@ class Bootstrap {
 	public function _pre_set_site_transient_update_themes( $transient ) {
 		$response = $this->github_releases->get();
 		if ( is_wp_error( $response ) ) {
-			error_log( $response->get_error_message() );
+			error_log( $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return $transient;
 		}
 
@@ -102,8 +101,10 @@ class Bootstrap {
 			return $transient;
 		}
 
-		$remote = $this->github_repository_content->get_headers();
-		$update = [
+		$github_repository_content = new GitHubRepositoryContent( $this->theme_name, $this->user_name, $this->repository, $response->tag_name );
+
+		$remote = $github_repository_content->get_headers();
+		$update = array(
 			'theme'        => $this->theme_name,
 			'new_version'  => $response->tag_name,
 			'url'          => $this->fields->get( 'homepage' ),
@@ -111,7 +112,7 @@ class Bootstrap {
 			'tested'       => $this->fields->get( 'tested' ) ? $this->fields->get( 'tested' ) : $remote['Tested up to'],
 			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $remote['RequiresWP'],
 			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $remote['RequiresPHP'],
-		];
+		);
 
 		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
 		$update = apply_filters(
@@ -130,13 +131,13 @@ class Bootstrap {
 				$transient = new stdClass();
 			}
 			if ( empty( $transient->no_update ) ) {
-				$transient->no_update = [];
+				$transient->no_update = array();
 			}
 			$transient->no_update[ $this->theme_name ] = $update;
 		} else {
 			if ( false === $transient ) {
 				$transient           = new stdClass();
-				$transient->response = [];
+				$transient->response = array();
 			}
 			$transient->response[ $this->theme_name ] = $update;
 		}
@@ -155,7 +156,15 @@ class Bootstrap {
 			foreach ( $hook_extra['themes'] as $theme ) {
 				if ( $theme === $this->theme_name ) {
 					$this->github_releases->delete_transient();
-					$this->github_repository_content->delete_transient();
+
+					$response = $this->github_releases->get();
+					if ( is_wp_error( $response ) ) {
+						error_log( $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+						continue;
+					}
+
+					$github_repository_content = new GitHubRepositoryContent( $this->theme_name, $this->user_name, $this->repository, $response->tag_name );
+					$github_repository_content->delete_transient();
 				}
 			}
 		}
@@ -170,7 +179,7 @@ class Bootstrap {
 	 * @param WP_Theme $old_theme Old WP_Theme object.
 	 */
 	public function _re_activate( $new_name, $new_theme, $old_theme ) {
-		remove_action( 'switch_theme', [ $this, '_re_activate' ], 10 );
+		remove_action( 'switch_theme', array( $this, '_re_activate' ), 10 );
 		if ( ! $old_theme->errors() && $new_theme->errors() ) {
 			switch_theme( untrailingslashit( $old_theme->get_stylesheet() ) );
 		}

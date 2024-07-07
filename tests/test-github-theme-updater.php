@@ -59,9 +59,9 @@ class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 		$expected->response = [
 			'twentyseventeen' => [
 				'theme'        => 'twentyseventeen',
-				'new_version'  => '1000000',
+				'new_version'  => '1000001',
 				'url'          => false,
-				'package'      => 'https://github.com/inc2734/dummy-twentyseventeen/releases/download/1000000/dummy-twentyseventeen-1000000.zip',
+				'package'      => 'https://github.com/inc2734/dummy-twentyseventeen/releases/download/1000001/dummy-twentyseventeen.zip',
 				'requires'     => '5.5',
 				'requires_php' => '5.6',
 				'tested'       => '',
