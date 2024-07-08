@@ -66,12 +66,10 @@ class GitHubReleases {
 			$transient = array();
 		}
 
-		if ( false !== $transient ) {
-			if ( ! $version && ! empty( $transient['latest'] ) ) {
-				return $transient['latest'];
-			} elseif ( ! empty( $transient[ $version ] ) ) {
-				return $transient[ $version ];
-			}
+		if ( ! $version && ! empty( $transient['latest'] ) ) {
+			return $transient['latest'];
+		} elseif ( ! empty( $transient[ $version ] ) ) {
+			return $transient[ $version ];
 		}
 
 		$response = $this->_request( $version );
