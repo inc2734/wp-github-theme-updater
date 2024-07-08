@@ -69,8 +69,9 @@ class Bootstrap {
 
 		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
 
-		$upgrader              = new App\Model\Upgrader( $theme_name );
-		$this->github_releases = new GitHubReleases( $theme_name, $user_name, $repository );
+		$upgrader                        = new App\Model\Upgrader( $theme_name );
+		$this->github_releases           = new GitHubReleases( $theme_name, $user_name, $repository );
+		$this->github_repository_content = new GitHubRepositoryContent( $theme_name, $user_name, $repository );
 
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, '_pre_set_site_transient_update_themes' ) );
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'pre_install' ), 10, 2 );
@@ -101,9 +102,7 @@ class Bootstrap {
 			return $transient;
 		}
 
-		$github_repository_content = new GitHubRepositoryContent( $this->theme_name, $this->user_name, $this->repository, $response->tag_name );
-
-		$remote = $github_repository_content->get_headers();
+		$remote = $this->github_repository_content->get_headers( $response->tag_name );
 		$update = array(
 			'theme'        => $this->theme_name,
 			'new_version'  => $response->tag_name,
@@ -156,15 +155,7 @@ class Bootstrap {
 			foreach ( $hook_extra['themes'] as $theme ) {
 				if ( $theme === $this->theme_name ) {
 					$this->github_releases->delete_transient();
-
-					$response = $this->github_releases->get();
-					if ( is_wp_error( $response ) ) {
-						error_log( $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-						continue;
-					}
-
-					$github_repository_content = new GitHubRepositoryContent( $this->theme_name, $this->user_name, $this->repository, $response->tag_name );
-					$github_repository_content->delete_transient();
+					$this->github_repository_content->delete_transient();
 				}
 			}
 		}

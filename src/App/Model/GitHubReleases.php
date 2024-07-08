@@ -61,17 +61,29 @@ class GitHubReleases {
 	 * @return array|WP_Error
 	 */
 	public function get( $version = null ) {
-		$transient = ! $version
-			? get_transient( $this->transient_name . '_' . $version )
-			: get_transient( $this->transient_name );
+		$transient = get_transient( $this->transient_name );
+		if ( ! is_array( $transient ) ) {
+			$transient = array();
+		}
+
 		if ( false !== $transient ) {
-			return $transient;
+			if ( ! $version && ! empty( $transient['latest'] ) ) {
+				return $transient['latest'];
+			} elseif ( ! empty( $transient[ $version ] ) ) {
+				return $transient[ $version ];
+			}
 		}
 
 		$response = $this->_request( $version );
 		$response = $this->_retrieve( $response );
 
-		set_transient( $this->transient_name, $response, 60 * 5 );
+		if ( ! $version ) {
+			$transient['latest'] = $response;
+		} else {
+			$transient[ $version ] = $response;
+		}
+		set_transient( $this->transient_name, $transient, 60 * 5 );
+
 		return $response;
 	}
 

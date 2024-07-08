@@ -33,13 +33,6 @@ class GitHubRepositoryContent {
 	protected $repository;
 
 	/**
-	 * Version.
-	 *
-	 * @var int|null
-	 */
-	protected $version;
-
-	/**
 	 * Transient name.
 	 *
 	 * @var string
@@ -52,33 +45,44 @@ class GitHubRepositoryContent {
 	 * @param string $theme_name Theme name.
 	 * @param string $user_name  User name.
 	 * @param string $repository Repository.
-	 * @param int|null $version Version.
 	 */
-	public function __construct( $theme_name, $user_name, $repository, $version = null ) {
+	public function __construct( $theme_name, $user_name, $repository ) {
 		$this->theme_name     = $theme_name;
 		$this->user_name      = $user_name;
 		$this->repository     = $repository;
-		$this->version        = $version;
-		$this->transient_name = ! $this->version
-			? sprintf( 'wp_github_theme_updater_repository_data_%1$s', $this->theme_name )
-			: sprintf( 'wp_github_theme_updater_repository_data_%1$s_%2$s', $this->theme_name, $this->version );
+		$this->transient_name = sprintf( 'wp_github_theme_updater_repository_data_%1$s', $this->theme_name );
 	}
 
 	/**
 	 * Get GitHub repository content.
 	 *
+	 * @param string|null $version Version.
 	 * @return string
 	 */
-	public function get() {
+	public function get( $version = null ) {
 		$transient = get_transient( $this->transient_name );
-		if ( false !== $transient ) {
-			return $transient;
+		if ( ! is_array( $transient ) ) {
+			$transient = array();
 		}
 
-		$response = $this->_request();
+		if ( false !== $transient ) {
+			if ( ! $version && ! empty( $transient['latest'] ) ) {
+				return $transient['latest'];
+			} elseif ( ! empty( $transient[ $version ] ) ) {
+				return $transient[ $version ];
+			}
+		}
+
+		$response = $this->_request( $version );
 		$response = $this->_retrieve( $response );
 
-		set_transient( $this->transient_name, $response, 60 * 60 );
+		if ( ! $version ) {
+			$transient['latest'] = $response;
+		} else {
+			$transient[ $version ] = $response;
+		}
+		set_transient( $this->transient_name, $transient, 60 * 5 );
+
 		return $response;
 	}
 
@@ -95,12 +99,13 @@ class GitHubRepositoryContent {
 	 * @see https://developer.wordpress.org/reference/functions/get_file_data/
 	 * @see https://developer.wordpress.org/reference/functions/wp_get_theme/
 	 *
+	 * @param string|null $version Version.
 	 * @return array
 	 */
-	public function get_headers() {
+	public function get_headers( $version = null ) {
 		$headers = array();
 
-		$content = $this->get();
+		$content = $this->get( $version );
 
 		$target_headers = array(
 			'RequiresWP'   => 'Requires at least',
@@ -129,7 +134,9 @@ class GitHubRepositoryContent {
 				$this->repository
 			),
 			$headers,
-			$this->version
+			$this->user_name,
+			$this->repository,
+			$version
 		);
 		// phpcs:enable
 	}
@@ -161,12 +168,13 @@ class GitHubRepositoryContent {
 	/**
 	 * Requesst.
 	 *
+	 * @param string|null $version Version.
 	 * @return array|WP_Error
 	 */
-	protected function _request() {
+	protected function _request( $version = null ) {
 		$current = wp_get_theme( $this->theme_name );
 
-		$url = ! $this->version
+		$url = ! $version
 			? sprintf(
 				'https://api.github.com/repos/%1$s/%2$s/contents/%3$s',
 				$this->user_name,
@@ -178,7 +186,7 @@ class GitHubRepositoryContent {
 				$this->user_name,
 				$this->repository,
 				preg_replace( '|^([^/]*?/)|', '', $current->get( 'Stylesheet' ) ) . '/style.css',
-				$this->version
+				$version
 			);
 
 		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores
@@ -192,7 +200,7 @@ class GitHubRepositoryContent {
 			$this->user_name,
 			$this->repository,
 			$this->theme_name,
-			$this->version
+			$version
 		);
 		// phpcs:enable
 
