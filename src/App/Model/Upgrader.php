@@ -50,6 +50,22 @@ class Upgrader {
 	}
 
 	/**
+	 * Filters whether to return the package.
+	 *
+	 * @param bool $reply Whether to bail without returning the package.
+	 * @param string $package The package file name.
+	 * @param WP_Upgrader $upgrader The WP_Upgrader instance.
+	 * @param array $hook_extra Extra arguments passed to hooked filters.
+	 * @return bool
+	 */
+	public function upgrader_pre_download( $reply, $package, $upgrader, $hook_extra ) {
+		if ( $this->theme_name === $hook_extra['theme'] ) {
+			$upgrader->strings['downloading_package'] = __( 'Downloading update&#8230;', 'inc2734-wp-github-theme-updater' );
+		}
+		return $reply;
+	}
+
+	/**
 	 * Filters the source file location for the upgrade package.
 	 *
 	 * @param string      $source        File source location. e.g. /wp-content/upgrade/snow-monkey-EjvQyV/snow-monkey/.

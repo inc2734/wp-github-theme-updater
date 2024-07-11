@@ -3,23 +3,27 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"Report-Msgid-Bugs-To: https://make.wordpress.org/polyglots/\n"
-"POT-Creation-Date: 2020-08-26 05:49:59+00:00\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-07-11T00:44:49+00:00\n"
+"PO-Revision-Date: 2024-07-11 09:45+0900\n"
+"Last-Translator: inc2734 <inc@2inc.org>\n"
+"Language-Team: \n"
+"Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2020-08-26 14:52+0900\n"
-"Language-Team: \n"
-"X-Generator: Poedit 2.4.1\n"
-"Last-Translator: inc2734 <inc@2inc.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"Language: ja\n"
+"X-Generator: Poedit 3.4.4\n"
 
-#: App/Model/GitHubReleases.php:66
+#: App/Model/GitHubReleases.php:119
 msgid "Failed to get update response."
 msgstr "更新情報の取得に失敗しました。"
 
 #. Translators: 1: Theme name, 2: Error message
-#: App/Model/GitHubReleases.php:70
+#: App/Model/GitHubReleases.php:123
 msgid "[%1$s] %2$s"
 msgstr "[%1$s] %2$s"
+
+#: App/Model/Upgrader.php:63
+msgid "Downloading update&#8230;"
+msgstr "更新をダウンロード中&#8230;"

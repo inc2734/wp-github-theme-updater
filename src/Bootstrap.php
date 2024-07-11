@@ -75,6 +75,7 @@ class Bootstrap {
 
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, '_pre_set_site_transient_update_themes' ) );
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'pre_install' ), 10, 2 );
+		add_filter( 'upgrader_pre_download', array( $upgrader, 'upgrader_pre_download' ), 10, 4 );
 		add_filter( 'upgrader_source_selection', array( $upgrader, 'source_selection' ), 10, 4 );
 		add_action( 'upgrader_process_complete', array( $this, '_upgrader_process_complete' ), 10, 2 );
 	}
