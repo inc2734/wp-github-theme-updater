@@ -74,12 +74,16 @@ class GitHubRepositoryContent {
 		$response = $this->_request( $version );
 		$response = $this->_retrieve( $response );
 
-		if ( ! $version ) {
-			$transient['latest'] = $response;
+		if ( ! is_wp_error( $response ) ) {
+			if ( ! $version ) {
+				$transient['latest'] = $response;
+			} else {
+				$transient[ $version ] = $response;
+			}
+			set_transient( $this->transient_name, $transient, 60 * 5 );
 		} else {
-			$transient[ $version ] = $response;
+			$this->delete_transient();
 		}
-		set_transient( $this->transient_name, $transient, 60 * 5 );
 
 		return $response;
 	}
