@@ -127,7 +127,7 @@ class Bootstrap {
 
 		$current = wp_get_theme( $this->theme_name );
 		if ( ! $this->_should_update( $current['Version'], $response->tag_name ) ) {
-			if ( false === $transient ) {
+			if ( false === $transient || null === $transient ) {
 				$transient = new stdClass();
 			}
 			if ( empty( $transient->no_update ) ) {
@@ -135,7 +135,7 @@ class Bootstrap {
 			}
 			$transient->no_update[ $this->theme_name ] = $update;
 		} else {
-			if ( false === $transient ) {
+			if ( false === $transient || null === $transient ) {
 				$transient           = new stdClass();
 				$transient->response = array();
 			}
