@@ -151,7 +151,7 @@ class GitHubRepositoryContent {
 	 */
 	protected function _retrieve( $response ) {
 		if ( is_wp_error( $response ) ) {
-			return null;
+			return $response;
 		}
 
 		$response_code = wp_remote_retrieve_response_code( $response );
