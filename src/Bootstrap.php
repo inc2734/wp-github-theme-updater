@@ -90,8 +90,12 @@ class Bootstrap {
 	 */
 	public function _pre_set_site_transient_update_themes( $transient ) {
 		$response = $this->github_releases->get();
-		if ( is_wp_error( $response ) ) {
-			error_log( $response->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+		try {
+			if ( is_wp_error( $response ) ) {
+				throw new \RuntimeException( $response->get_error_message() );
+			}
+		} catch ( \Exception $e ) {
+			error_log( $e->getMessage() );
 			return $transient;
 		}
 

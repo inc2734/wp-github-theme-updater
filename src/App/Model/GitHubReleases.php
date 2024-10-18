@@ -217,14 +217,28 @@ class GitHubReleases {
 		);
 		// phpcs:enable
 
-		if ( ! $url ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-			return false;
-		}
+		try {
+			if ( ! $url ) {
+				throw new \RuntimeException(
+					sprintf(
+						'[%1$s] Can\'t find zip URL for update.',
+						$this->theme_name
+					)
+				);
+			}
 
-		$http_status_code = $this->_get_http_status_code( $url );
-		if ( ! in_array( (int) $http_status_code, array( 200, 302 ), true ) ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. zip url not found. ' . $http_status_code . ' ' . $url ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			$http_status_code = $this->_get_http_status_code( $url );
+			if ( ! in_array( (int) $http_status_code, array( 200, 302 ), true ) ) {
+				throw new \RuntimeException(
+					sprintf(
+						'[%1$s] Can\'t find zip URL for update. HTTP status code is "%2$s"',
+						$this->theme_name,
+						$http_status_code
+					)
+				);
+			}
+		} catch ( \Exception $e ) {
+			error_log( $e->getMessage() );
 			return false;
 		}
 
