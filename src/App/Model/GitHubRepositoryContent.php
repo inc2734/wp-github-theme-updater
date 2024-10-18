@@ -155,11 +155,29 @@ class GitHubRepositoryContent {
 		}
 
 		$response_code = wp_remote_retrieve_response_code( $response );
-		if ( 200 !== $response_code ) {
-			return null;
+		$response_code = $response_code ? $response_code : 503;
+		if ( 200 !== (int) $response_code ) {
+			return new WP_Error(
+				$response_code,
+				sprintf(
+					'[%1$s] Failed to get GitHub repository content. HTTP status is "%2$s"',
+					$this->theme_name,
+					$response_code
+				)
+			);
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ) );
+		if ( ! is_object( $body ) ) {
+			return new WP_Error(
+				$response_code,
+				sprintf(
+					'[%1$s] Failed to get GitHub repository content',
+					$this->theme_name
+				)
+			);
+		}
+
 		if ( ! isset( $body->content ) ) {
 			return null;
 		}

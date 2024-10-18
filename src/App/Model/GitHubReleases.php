@@ -108,35 +108,34 @@ class GitHubReleases {
 		}
 
 		$response_code = wp_remote_retrieve_response_code( $response );
-		if ( '' === $response_code ) {
-			return null;
+		$response_code = $response_code ? $response_code : 503;
+		if ( 200 !== (int) $response_code ) {
+			return new WP_Error(
+				$response_code,
+				sprintf(
+					'[%1$s] Failed to get update response. HTTP status is "%2$s"',
+					$this->theme_name,
+					$response_code
+				)
+			);
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ) );
-		if ( 200 === (int) $response_code ) {
-			$body->package = $body->tag_name ? $this->_get_zip_url( $body ) : false;
-			return $body;
+		if ( ! is_object( $body ) ) {
+			return new WP_Error(
+				$response_code,
+				sprintf(
+					'[%1$s] Failed to get update response.',
+					$this->theme_name
+				)
+			);
 		}
 
-		$message = null !== $body && property_exists( $body, 'message' )
-			? $body->message
-			: __( 'Failed to get update response.', 'inc2734-wp-github-theme-updater' );
+		$body->package = ! empty( $body->tag_name )
+			? $this->_get_zip_url( $body )
+			: false;
 
-		$error_message = sprintf(
-			/* Translators: 1: Theme name, 2: Error message  */
-			__( '[%1$s] %2$s', 'inc2734-wp-github-theme-updater' ),
-			$this->theme_name,
-			$message
-		);
-
-		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( 'Inc2734_WP_GitHub_Theme_Updater error. [' . $response_code . '] ' . $error_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
-		}
-
-		return new WP_Error(
-			$response_code,
-			$error_message
-		);
+		return $body;
 	}
 
 	/**
