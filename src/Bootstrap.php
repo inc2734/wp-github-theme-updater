@@ -85,6 +85,8 @@ class Bootstrap {
 	 *
 	 * @see https://make.wordpress.org/core/2020/07/30/recommended-usage-of-the-updates-api-to-support-the-auto-updates-ui-for-plugins-and-themes-in-wordpress-5-5/
 	 *
+	 * @throws \RuntimeException Invalid response.
+	 *
 	 * @param false|array $transient New value of site transient.
 	 * @return false|array
 	 */
@@ -95,7 +97,7 @@ class Bootstrap {
 				throw new \RuntimeException( $response->get_error_message() );
 			}
 		} catch ( \Exception $e ) {
-			error_log( $e->getMessage() );
+			error_log( $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return $transient;
 		}
 

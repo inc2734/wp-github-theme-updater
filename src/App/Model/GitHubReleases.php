@@ -178,6 +178,8 @@ class GitHubReleases {
 	/**
 	 * Get remote zip URL.
 	 *
+	 * @throws \RuntimeException Invalid zip URL.
+	 *
 	 * @param stdClass $response Responser of GitHub API.
 	 * @return string|false
 	 */
@@ -238,7 +240,7 @@ class GitHubReleases {
 				);
 			}
 		} catch ( \Exception $e ) {
-			error_log( $e->getMessage() );
+			error_log( $e->getMessage() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 			return false;
 		}
 
