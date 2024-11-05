@@ -67,17 +67,23 @@ class Bootstrap {
 		$this->repository = $repository;
 		$this->fields     = new Fields( $fields );
 
-		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
-
 		$upgrader                        = new App\Model\Upgrader( $theme_name );
 		$this->github_releases           = new GitHubReleases( $theme_name, $user_name, $repository );
 		$this->github_repository_content = new GitHubRepositoryContent( $theme_name, $user_name, $repository );
 
+		add_filter( 'init', array( $this, '_init' ) );
 		add_filter( 'pre_set_site_transient_update_themes', array( $this, '_pre_set_site_transient_update_themes' ) );
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'pre_install' ), 10, 2 );
 		add_filter( 'upgrader_pre_download', array( $upgrader, 'upgrader_pre_download' ), 10, 4 );
 		add_filter( 'upgrader_source_selection', array( $upgrader, 'source_selection' ), 10, 4 );
 		add_action( 'upgrader_process_complete', array( $this, '_upgrader_process_complete' ), 10, 2 );
+	}
+
+	/**
+	 * Load textdomain.
+	 */
+	public function _init() {
+		load_textdomain( 'inc2734-wp-github-theme-updater', __DIR__ . '/languages/' . get_locale() . '.mo' );
 	}
 
 	/**
