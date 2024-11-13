@@ -83,7 +83,8 @@ class GitHubRepositoryContent {
 			}
 			set_transient( $this->transient_name, $transient, 60 * 5 );
 		} else {
-			$this->delete_transient();
+			// @todo Since it is not essential for updating, the cache is not erased by the GItHub API rate limitation measures.
+			// $this->delete_transient();
 		}
 
 		return $response;
