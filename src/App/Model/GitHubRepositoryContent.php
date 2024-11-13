@@ -58,7 +58,7 @@ class GitHubRepositoryContent {
 	 * Get GitHub repository content.
 	 *
 	 * @param string|null $version Version.
-	 * @return string
+	 * @return string|WP_Error
 	 */
 	public function get( $version = null ) {
 		$transient = get_transient( $this->transient_name );
@@ -116,9 +116,11 @@ class GitHubRepositoryContent {
 			'Tested up to' => 'Tested up to',
 		);
 
-		if ( null !== $content ) {
+		if ( null !== $content && ! is_wp_error( $content ) ) {
 			$content = substr( $content, 0, 8 * KB_IN_BYTES );
 			$content = str_replace( "\r", "\n", $content );
+		} else {
+			$content = '';
 		}
 
 		foreach ( $target_headers as $field => $regex ) {
