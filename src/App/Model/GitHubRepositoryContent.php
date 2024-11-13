@@ -75,6 +75,7 @@ class GitHubRepositoryContent {
 		$response = $this->_request( $version );
 		$response = $this->_retrieve( $response );
 
+		// phpcs:disable Generic.CodeAnalysis.EmptyStatement.DetectedElse
 		if ( ! is_wp_error( $response ) ) {
 			if ( ! $version ) {
 				$transient['latest'] = $response;
@@ -86,6 +87,7 @@ class GitHubRepositoryContent {
 			// @todo Since it is not essential for updating, the cache is not erased by the GItHub API rate limitation measures.
 			// $this->delete_transient();
 		}
+		// phpcs:enable
 
 		return $response;
 	}
