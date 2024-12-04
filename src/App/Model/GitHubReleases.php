@@ -62,6 +62,9 @@ class GitHubReleases {
 	 */
 	public function get( $version = null ) {
 		$transient = get_transient( $this->transient_name );
+		if ( is_object( $transient ) ) {
+			$transient = (array) $transient;
+		}
 		if ( ! is_array( $transient ) ) {
 			$transient = array();
 		}
