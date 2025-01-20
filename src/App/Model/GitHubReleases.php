@@ -175,7 +175,11 @@ class GitHubReleases {
 		);
 		// phpcs:enable
 
-		return Requester::request( $url );
+		return Requester::request(
+			$url,
+			$this->user_name,
+			$this->repository
+		);
 	}
 
 	/**
@@ -257,7 +261,12 @@ class GitHubReleases {
 	 * @return int
 	 */
 	protected function _get_http_status_code( $url ) {
-		$response = Requester::request( $url );
+		$response = Requester::request(
+			$url,
+			$this->user_name,
+			$this->repository
+		);
+
 		return wp_remote_retrieve_response_code( $response );
 	}
 }
