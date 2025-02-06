@@ -236,7 +236,7 @@ class GitHubReleases {
 				);
 			}
 
-			$http_status_code = $this->_get_http_status_code( $url );
+			$http_status_code = $this->get_http_status_code( $url );
 			if ( ! in_array( (int) $http_status_code, array( 200, 302 ), true ) ) {
 				throw new \RuntimeException(
 					sprintf(
@@ -257,11 +257,11 @@ class GitHubReleases {
 	/**
 	 * Return http status code from $url.
 	 *
-	 * @param string $url URL.
+	 * @param string $url Target url.
 	 * @return int
 	 */
-	protected function _get_http_status_code( $url ) {
-		$response = Requester::request(
+	public function get_http_status_code( $url ) {
+		$response = Requester::head(
 			$url,
 			$this->user_name,
 			$this->repository
