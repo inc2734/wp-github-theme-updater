@@ -1,5 +1,5 @@
 <?php
-class GitHub_Plugin_Updater_Release_Test extends WP_UnitTestCase {
+class GitHub_Theme_Updater_Release_Test extends WP_UnitTestCase {
 
 	/**
 	 * @test
