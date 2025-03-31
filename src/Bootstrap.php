@@ -97,6 +97,8 @@ class Bootstrap {
 	 * @return false|array
 	 */
 	public function _pre_set_site_transient_update_themes( $transient ) {
+		global $wp_version;
+
 		$response = $this->github_releases->get();
 		try {
 			if ( is_wp_error( $response ) ) {
@@ -138,7 +140,29 @@ class Bootstrap {
 		// phpcs:enable
 
 		$current = wp_get_theme( $this->theme_name );
-		if ( ! $this->_should_update( $current['Version'], $response->tag_name ) ) {
+
+		$current_version      = $current->get( 'Version' );
+		$current_requires_wp  = $current->get( 'RequiresWP' );
+		$current_requires_php = $current->get( 'RequiresPHP' );
+
+		$env_info = array(
+			'wp_version'  => $this->_sanitize_version( $wp_version ),
+			'php_version' => $this->_sanitize_version( PHP_VERSION ),
+		);
+
+		$current_info = array(
+			'version'      => $this->_sanitize_version( $current_version ),
+			'requires_wp'  => $this->_sanitize_version( $current_requires_wp ),
+			'requires_php' => $this->_sanitize_version( $current_requires_php ),
+		);
+
+		$new_info = array(
+			'version'      => $this->_sanitize_version( $update['new_version'] ),
+			'requires_wp'  => $this->_sanitize_version( $update['requires'] ),
+			'requires_php' => $this->_sanitize_version( $update['requires_php'] ),
+		);
+
+		if ( ! static::should_update( $env_info, $current_info, $new_info ) ) {
 			if ( false === $transient || null === $transient ) {
 				$transient = new stdClass();
 			}
@@ -196,6 +220,10 @@ class Bootstrap {
 	 * @return string
 	 */
 	protected function _sanitize_version( $version ) {
+		if ( false === $version || null === $version ) {
+			return '';
+		}
+
 		$version = preg_replace( '/^v(.*)$/', '$1', $version );
 		return $version;
 	}
@@ -203,15 +231,38 @@ class Bootstrap {
 	/**
 	 * If remote version is newer, return true.
 	 *
-	 * @param string $current_version Current version.
-	 * @param string $remote_version Remove version.
+	 * @param array $env_info Environment info.
+	 * @param array $current_info Current theme info.
+	 * @param array $new_info New theme info.
 	 * @return bool
 	 */
-	protected function _should_update( $current_version, $remote_version ) {
-		return version_compare(
-			$this->_sanitize_version( $current_version ),
-			$this->_sanitize_version( $remote_version ),
+	public static function should_update( $env_info, $current_info, $new_info ) {
+		$version_ok = version_compare(
+			$current_info['version'],
+			$new_info['version'],
 			'<'
 		);
+
+		// Check whether your current environment meets the WP version required by the new theme.
+		$wp_ok = true;
+		if ( $new_info['requires_wp'] ) {
+			$wp_ok = version_compare(
+				$env_info['wp_version'],
+				$new_info['requires_wp'],
+				'>='
+			);
+		}
+
+		// Check whether your current environment meets the PHP version required by the new theme.
+		$php_ok = true;
+		if ( $new_info['requires_php'] ) {
+			$php_ok = version_compare(
+				$env_info['php_version'],
+				$new_info['requires_php'],
+				'>='
+			);
+		}
+
+		return $version_ok && $wp_ok && $php_ok;
 	}
 }
