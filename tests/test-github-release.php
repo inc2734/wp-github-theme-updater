@@ -42,4 +42,28 @@ class GitHub_Theme_Updater_Release_Test extends WP_UnitTestCase {
 		$response = $github_releases->get();
 		$this->assertEquals( 'https://github.com/inc2734/dummy-twentyseventeen/archive/1000001.zip?v=1', $response->package );
 	}
+
+	/**
+	 * @test
+	 */
+	public function get_zip_url_falls_back_to_archive() {
+		$github_releases = new class( 'twentyseventeen', 'inc2734', 'dummy-twentyseventeen' ) extends Inc2734\WP_GitHub_Theme_Updater\App\Model\GitHubReleases {
+			public function get_http_status_code( $url ) {
+				return false !== strpos( $url, '/releases/download/' ) ? 404 : 200;
+			}
+
+			public function get_zip_url( $response ) {
+				return $this->_get_zip_url( $response );
+			}
+		};
+
+		$url = $github_releases->get_zip_url(
+			(object) array(
+				'tag_name' => '1.2.3',
+				'assets'   => array(),
+			)
+		);
+
+		$this->assertSame( 'https://github.com/inc2734/dummy-twentyseventeen/archive/1.2.3.zip', $url );
+	}
 }

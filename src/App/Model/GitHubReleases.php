@@ -210,6 +210,16 @@ class GitHubReleases {
 				$this->repository,
 				$tag_name
 			);
+
+			$http_status_code = $this->get_http_status_code( $url );
+			if ( ! in_array( $http_status_code, array( 200, 302 ), true ) ) {
+				$url = sprintf(
+					'https://github.com/%1$s/%2$s/archive/%3$s.zip',
+					$this->user_name,
+					$this->repository,
+					$tag_name
+				);
+			}
 		}
 
 		// phpcs:disable WordPress.NamingConventions.ValidHookName.UseUnderscores

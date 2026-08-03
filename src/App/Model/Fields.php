@@ -35,6 +35,27 @@ class Fields {
 	public $sections = false;
 
 	/**
+	 * Whether to return the 'Compatible up to' value.
+	 *
+	 * @var int|boolean
+	 */
+	public $tested = false;
+
+	/**
+	 * Whether to return the required WordPress version.
+	 *
+	 * @var int|boolean
+	 */
+	public $requires = false;
+
+	/**
+	 * Whether to return the required PHP version.
+	 *
+	 * @var int|boolean
+	 */
+	public $requires_php = false;
+
+	/**
 	 * Whether to return the rating in percent and total number of ratings.
 	 *
 	 * @var int|boolean

@@ -99,6 +99,10 @@ class Bootstrap {
 	public function _pre_set_site_transient_update_themes( $transient ) {
 		global $wp_version;
 
+		if ( ! empty( $transient->no_update[ $this->theme_name ] ) ) {
+			return $transient;
+		}
+
 		$response = $this->github_releases->get();
 		try {
 			if ( is_wp_error( $response ) ) {
@@ -113,7 +117,12 @@ class Bootstrap {
 			return $transient;
 		}
 
-		if ( ! $response->package ) {
+		$current = wp_get_theme( $this->theme_name );
+
+		$current_version = $this->_sanitize_version( $current->get( 'Version' ) );
+		$new_version     = $this->_sanitize_version( $response->tag_name );
+
+		if ( version_compare( $current_version, $new_version, '<' ) && ! $response->package ) {
 			return $transient;
 		}
 
@@ -124,7 +133,7 @@ class Bootstrap {
 			'url'          => $this->fields->get( 'homepage' ),
 			'package'      => $response->package,
 			'tested'       => $this->fields->get( 'tested' ) ? $this->fields->get( 'tested' ) : $remote['Tested up to'],
-			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'require' ) : $remote['RequiresWP'],
+			'requires'     => $this->fields->get( 'requires' ) ? $this->fields->get( 'requires' ) : $remote['RequiresWP'],
 			'requires_php' => $this->fields->get( 'requires_php' ) ? $this->fields->get( 'requires_php' ) : $remote['RequiresPHP'],
 		);
 
@@ -139,9 +148,6 @@ class Bootstrap {
 		);
 		// phpcs:enable
 
-		$current = wp_get_theme( $this->theme_name );
-
-		$current_version      = $current->get( 'Version' );
 		$current_requires_wp  = $current->get( 'RequiresWP' );
 		$current_requires_php = $current->get( 'RequiresPHP' );
 
@@ -151,7 +157,7 @@ class Bootstrap {
 		);
 
 		$current_info = array(
-			'version'      => $this->_sanitize_version( $current_version ),
+			'version'      => $current_version,
 			'requires_wp'  => $this->_sanitize_version( $current_requires_wp ),
 			'requires_php' => $this->_sanitize_version( $current_requires_php ),
 		);
@@ -170,7 +176,7 @@ class Bootstrap {
 				$transient->no_update = array();
 			}
 			$transient->no_update[ $this->theme_name ] = $update;
-		} else {
+		} elseif ( ! empty( $update['package'] ) ) {
 			if ( false === $transient || null === $transient ) {
 				$transient           = new stdClass();
 				$transient->response = array();
@@ -185,16 +191,21 @@ class Bootstrap {
 	 * Fires when the upgrader process is complete.
 	 *
 	 * @param WP_Upgrader $upgrader_object WP_Upgrader instance. In other contexts this might be a Theme_Upgrader, Plugin_Upgrader, Core_Upgrade, or Language_Pack_Upgrader instance.
-	 * @param array       $hook_extra Array of bulk item update data.
+	 * @param array       $hook_extra Array of update data.
 	 */
 	public function _upgrader_process_complete( $upgrader_object, $hook_extra ) {
-		if ( 'update' === $hook_extra['action'] && 'theme' === $hook_extra['type'] ) {
-			foreach ( $hook_extra['themes'] as $theme ) {
-				if ( $theme === $this->theme_name ) {
-					$this->github_releases->delete_transient();
-					$this->github_repository_content->delete_transient();
-				}
-			}
+		if ( 'update' !== ( $hook_extra['action'] ?? null ) || 'theme' !== ( $hook_extra['type'] ?? null ) ) {
+			return;
+		}
+
+		$themes = isset( $hook_extra['themes'] ) ? (array) $hook_extra['themes'] : array();
+		if ( isset( $hook_extra['theme'] ) ) {
+			$themes[] = $hook_extra['theme'];
+		}
+
+		if ( in_array( $this->theme_name, $themes, true ) ) {
+			$this->github_releases->delete_transient();
+			$this->github_repository_content->delete_transient();
 		}
 	}
 
