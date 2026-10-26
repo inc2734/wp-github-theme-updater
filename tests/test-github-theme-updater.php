@@ -2,6 +2,7 @@
 class GitHub_Theme_Updater_Test extends WP_UnitTestCase {
 
 	private $_upgrade_dir;
+	private $_theme_root;
 
 	public function __construct() {
 		parent::__construct();
